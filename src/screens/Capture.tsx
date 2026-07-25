@@ -106,7 +106,7 @@ export default function Capture() {
         </h1>
         <p className="mt-2 text-sm text-muted">
           Photos and short videos both work. Your uploads land in the shared pool with everyone
-          else&rsquo;s — head to Gallery to see them all and tag yourself.
+          else&rsquo;s — head to the Pool to see them all and tag yourself.
         </p>
 
         {isEmpty ? (

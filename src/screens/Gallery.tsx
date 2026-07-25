@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useIdentity } from '../lib/identity'
 import { useEventData } from '../lib/useEventData'
 import { likePhoto, tagPerson, tagSelf, unlikePhoto, untagSelf } from '../lib/db'
@@ -66,6 +67,10 @@ export default function Gallery() {
 
   const likedCount = me ? likes.filter((l) => l.attendee_id === me.id).length : 0
   const moments = useMemo(() => groupIntoMoments(visible), [visible])
+  const untaggedCount = useMemo(
+    () => photos.filter((p) => (cast.get(p.id) ?? []).length === 0).length,
+    [photos, cast],
+  )
 
   async function toggle(photo: Photo) {
     if (!me || busy) return
@@ -113,10 +118,12 @@ export default function Gallery() {
       <TopBar />
       <main className="mx-auto w-full max-w-2xl px-5 pb-28">
         <header className="py-6">
-          <h1 className="font-display text-3xl leading-tight font-medium text-ink">Tonight&rsquo;s pool</h1>
+          <h1 className="font-display text-3xl leading-tight font-medium text-ink">
+            The pool
+          </h1>
           <p className="mt-2 text-sm text-muted">
-            Tap every photo you&rsquo;re in. That&rsquo;s how you get them back — and how Overlap
-            learns who you met.
+            Everyone&rsquo;s photos, together. Tap the ones you&rsquo;re in to get them back — and
+            to build the map of who met who.
           </p>
           {me ? (
             <p className="mt-3 font-mono text-xs text-signal">
@@ -136,6 +143,28 @@ export default function Gallery() {
             onOpen={setOpenId}
             onDismiss={() => setDismissed(true)}
           />
+        ) : null}
+
+        {/* La accion que alimenta todo el producto. Sin esto hay que descubrir
+            sola que tocar una foto y buscar "That's me" es EL gesto. */}
+        {me && untaggedCount > 0 ? (
+          <Link
+            to="/tag"
+            className="mb-4 flex items-center gap-3 rounded-[10px] border border-signal/40 bg-signal/10 p-3.5"
+          >
+            <span className="min-w-0 flex-1">
+              <span className="block font-display text-[14px] font-medium text-ink">
+                {untaggedCount} {untaggedCount === 1 ? 'photo has' : 'photos have'} nobody in
+                {untaggedCount === 1 ? ' it' : ' them'} yet
+              </span>
+              <span className="mt-0.5 block text-[12px] text-muted">
+                Name who&rsquo;s in them — that&rsquo;s what builds the map.
+              </span>
+            </span>
+            <span className="shrink-0 rounded-lg bg-signal px-3 py-2 font-display text-[13px] font-medium text-night">
+              Start
+            </span>
+          </Link>
         ) : null}
 
         {me && photos.length > 0 ? (

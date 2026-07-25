@@ -1,23 +1,15 @@
 import { useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useIdentity } from '../lib/identity'
 import { useEventData } from '../lib/useEventData'
-import {
-  buildEdges,
-  formatSpan,
-  overlapsFor,
-  photosFor,
-  sharedRange,
-  timeOf,
-  timeRange,
-} from '../lib/graph'
+import { formatSpan, overlapsFor, photosFor, sharedRange, timeOf, timeRange } from '../lib/graph'
 import { photoUrl } from '../lib/supabase'
 import { likePhoto, myLikesZipUrl, myPhotosZipUrl, unlikePhoto } from '../lib/db'
 import Avatar from '../components/Avatar'
 import TopBar from '../components/TopBar'
 import PhotoLightbox from '../components/PhotoLightbox'
 import ConnectRow from '../components/ConnectRow'
-import EventGraph from '../components/EventGraph'
-import type { Attendee, Photo, PhotoTag } from '../lib/types'
+import type { Attendee, Photo } from '../lib/types'
 import type { Overlap } from '../lib/graph'
 
 const STRIP_CARD_W = 220
@@ -117,7 +109,6 @@ export default function Dossier() {
                 <Hero photos={myPhotos} overlapCount={overlaps.length} />
                 <PhotoStrip photos={chronological} onOpen={setOpenPhotoId} />
                 <SaveButton attendeeId={me.id} />
-                <EventGraph attendees={attendees} tags={tags} meId={me.id} />
                 {overlaps.length > 0 ? (
                   <PeopleSection overlaps={overlaps} photos={photos} onOpenPhoto={setOpenPhotoId} />
                 ) : (
@@ -132,13 +123,6 @@ export default function Dossier() {
               photos={myLikedPhotos}
               attendeeId={me.id}
               onOpen={setOpenPhotoId}
-            />
-
-            <NightStats
-              photos={photos}
-              attendees={attendees}
-              tags={tags}
-              likes={likes.length}
             />
 
             {myPhotos.length > 0 ? (
@@ -273,57 +257,6 @@ function SaveButton({ attendeeId }: { attendeeId: string }) {
         <span className="font-mono text-[11px] opacity-60">↓</span>
       </a>
     </div>
-  )
-}
-
-/** Los numeros reales de la noche — del evento entero, no solo tuyos. */
-function NightStats({
-  photos,
-  attendees,
-  tags,
-  likes,
-}: {
-  photos: Photo[]
-  attendees: Attendee[]
-  tags: PhotoTag[]
-  likes: number
-}) {
-  const connections = useMemo(() => buildEdges(tags).length, [tags])
-  const span = formatSpan(timeRange(photos))
-
-  const items = [
-    { value: photos.length, label: 'photos' },
-    { value: attendees.length, label: 'people' },
-    { value: connections, label: connections === 1 ? 'connection' : 'connections' },
-    { value: likes, label: 'likes' },
-  ]
-
-  return (
-    <section className="mt-9 border-t border-border pt-7">
-      <div className="px-5">
-        <h2 className="font-display text-[21px] font-medium tracking-[-0.02em] text-ink">
-          The night in numbers
-        </h2>
-        {span ? (
-          <p className="mt-1.5 font-mono text-[10px] tracking-[0.14em] text-muted uppercase">
-            {span} of it, so far
-          </p>
-        ) : null}
-      </div>
-
-      <dl className="mt-4 grid grid-cols-2 gap-2 px-5">
-        {items.map((item) => (
-          <div key={item.label} className="rounded-[10px] border border-border bg-surface p-3.5">
-            <dt className="font-mono text-[10px] tracking-[0.14em] text-muted uppercase">
-              {item.label}
-            </dt>
-            <dd className="mt-1 font-display text-[28px] leading-none font-medium text-signal">
-              {item.value}
-            </dd>
-          </div>
-        ))}
-      </dl>
-    </section>
   )
 }
 
@@ -521,9 +454,16 @@ function EmptyRecap() {
   return (
     <div className="mx-5 mt-6 rounded-2xl border border-dashed border-border px-5 py-10 text-center">
       <p className="text-sm text-muted">
-        Your recap fills in once you claim the photos you&rsquo;re in. Head to the gallery and tap
-        &ldquo;That&rsquo;s me&rdquo;.
+        Your recap fills in once you claim the photos you&rsquo;re in.
       </p>
+      {/* Un empty state que solo describe el gesto deja el trabajo de
+          encontrarlo al usuario; este lleva directo al flujo. */}
+      <Link
+        to="/tag"
+        className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-signal px-5 py-3 font-display text-[14px] font-medium text-night"
+      >
+        Find my photos
+      </Link>
     </div>
   )
 }

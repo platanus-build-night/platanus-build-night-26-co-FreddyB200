@@ -111,12 +111,15 @@ export default function EventGraph({
   tags,
   meId,
   embedded,
+  heading = 'The room',
 }: {
   attendees: Attendee[]
   tags: PhotoTag[]
   meId: string
   /** Reusado dentro de un PersonList (tageados/likes): sin header propio, foco en meId. */
   embedded?: boolean
+  /** null cuando la pantalla que lo contiene ya dice de que se trata. */
+  heading?: string | null
 }) {
   const [revealId, setRevealId] = useState<string | null>(null)
 
@@ -136,6 +139,27 @@ export default function EventGraph({
   const positions = useMemo(() => layout(nodeIds, edges), [nodeIds, edges])
   const revealed = revealId ? (byId.get(revealId) ?? null) : null
 
+  /**
+   * Encuadre ajustado a donde quedaron los nodos. Con el viewBox fijo de SIZE,
+   * pocos nodos se apinaban al centro y sobraba media pantalla en blanco; esto
+   * hace que el grafo llene el espacio tenga 3 personas o 30.
+   */
+  const box = useMemo(() => {
+    const pts = [...positions.values()]
+    if (pts.length === 0) return { x: 0, y: 0, w: SIZE, h: SIZE }
+    const pad = 34 // radio del nodo mas grande + aire para el texto
+    const xs = pts.map((p) => p.x)
+    const ys = pts.map((p) => p.y)
+    const minX = Math.min(...xs) - pad
+    const minY = Math.min(...ys) - pad
+    const w = Math.max(...xs) + pad - minX
+    const h = Math.max(...ys) + pad - minY
+    // Cuadrado, para que los circulos no se deformen al escalar. Con piso:
+    // sin el, tres nodos se escalan hasta ocupar la pantalla y se ven enormes.
+    const side = Math.max(w, h, SIZE * 0.72)
+    return { x: minX - (side - w) / 2, y: minY - (side - h) / 2, w: side, h: side }
+  }, [positions])
+
   if (nodeIds.length < 2) return null
 
   const maxWeight = Math.max(1, ...edges.map((e) => e.weight))
@@ -144,15 +168,23 @@ export default function EventGraph({
     <section className={embedded ? 'mt-3' : 'mt-9 border-t border-border pt-7'}>
       {embedded ? null : (
         <div className="px-5">
-          <h2 className="font-display text-[21px] font-medium tracking-[-0.02em] text-ink">The room</h2>
-          <p className="mt-1.5 font-mono text-[10px] tracking-[0.14em] text-muted uppercase">
-            {nodeIds.length} people · {edges.length} connection{edges.length === 1 ? '' : 's'}
+          {heading ? (
+            <h2 className="font-display text-[21px] font-medium tracking-[-0.02em] text-ink">
+              {heading}
+            </h2>
+          ) : null}
+          {/* Aclara por que el grafo tiene menos gente que el evento: solo
+              aparece quien ya fue tageado en alguna foto. Sin esto, ver "11
+              people" arriba y 3 nodos aca se lee como un bug. */}
+          <p className="font-mono text-[10px] tracking-[0.14em] text-muted uppercase">
+            {nodeIds.length} of {attendees.length} tagged so far · {edges.length} connection
+            {edges.length === 1 ? '' : 's'}
           </p>
         </div>
       )}
 
       <svg
-        viewBox={`0 0 ${SIZE} ${SIZE}`}
+        viewBox={`${box.x} ${box.y} ${box.w} ${box.h}`}
         className={embedded ? 'mx-auto w-full max-w-[220px]' : 'mx-auto mt-4 w-full max-w-sm'}
         role="img"
         aria-label={`Graph of ${nodeIds.length} people who overlapped tonight`}

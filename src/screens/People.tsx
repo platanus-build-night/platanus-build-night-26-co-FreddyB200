@@ -8,6 +8,7 @@ import ConnectRow from '../components/ConnectRow'
 import EventGraph from '../components/EventGraph'
 import PhotoLightbox from '../components/PhotoLightbox'
 import Thumb from '../components/Thumb'
+import NightStats from '../components/NightStats'
 import { downloadVCards } from '../lib/vcard'
 import type { Attendee, Photo, PhotoTag } from '../lib/types'
 
@@ -19,7 +20,7 @@ import type { Attendee, Photo, PhotoTag } from '../lib/types'
  */
 export default function People() {
   const { event, me } = useIdentity()
-  const { photos, attendees, tags, loading } = useEventData(event?.id)
+  const { photos, attendees, tags, likes, loading } = useEventData(event?.id)
   const [query, setQuery] = useState('')
   const [openId, setOpenId] = useState<string | null>(null)
   const [openPhotoId, setOpenPhotoId] = useState<string | null>(null)
@@ -114,28 +115,35 @@ export default function People() {
       <TopBar />
       <main className="mx-auto w-full max-w-2xl px-5 pb-28">
         <header className="py-6">
-          <h1 className="font-display text-3xl leading-tight font-medium text-ink">
-            Who&rsquo;s here
-          </h1>
+          <h1 className="font-display text-3xl leading-tight font-medium text-ink">The room</h1>
           <p className="mt-2 text-sm text-muted">
-            Everyone who scanned in tonight — tap anyone to see what they&rsquo;re building, who
-            they crossed paths with, and how to reach them.
+            Everyone who scanned in tonight, and how you all connect. Tap anyone to see what
+            they&rsquo;re building and how to reach them.
           </p>
-          <p className="mt-3 font-mono text-xs text-signal">
-            {attendees.length} {attendees.length === 1 ? 'person' : 'people'} in the room
-          </p>
-
-          {contactable.length > 0 ? (
-            <button
-              type="button"
-              onClick={() => downloadVCards(contactable, event?.name ?? 'the event')}
-              className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-border bg-night px-3.5 py-2.5 font-display text-[13px] font-medium text-ink transition-colors hover:border-signal hover:text-signal"
-            >
-              <span>Save {contactable.length} contacts to my phone</span>
-              <span className="font-mono text-[11px] opacity-60">↓</span>
-            </button>
-          ) : null}
+          <div className="mt-3">
+            <NightStats
+              photos={photos}
+              attendees={attendees}
+              tags={tags}
+              likes={likes.length}
+            />
+          </div>
         </header>
+
+        {/* El mapa de conexiones es la identidad de esta pantalla, no un extra
+            del perfil personal — por eso vive aca y no en "You". */}
+        <EventGraph attendees={attendees} tags={tags} meId={me?.id ?? ''} heading={null} />
+
+        {contactable.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => downloadVCards(contactable, event?.name ?? 'the event')}
+            className="mt-6 mb-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-border bg-night px-3.5 py-2.5 font-display text-[13px] font-medium text-ink transition-colors hover:border-signal hover:text-signal"
+          >
+            <span>Save {contactable.length} contacts to my phone</span>
+            <span className="font-mono text-[11px] opacity-60">↓</span>
+          </button>
+        ) : null}
 
         {attendees.length > 4 ? (
           <input

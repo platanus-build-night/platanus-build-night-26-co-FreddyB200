@@ -8,6 +8,7 @@ import CreateEvent from './screens/CreateEvent'
 import Capture from './screens/Capture'
 import Gallery from './screens/Gallery'
 import People from './screens/People'
+import QuickTag from './screens/QuickTag'
 import Dossier from './screens/Dossier'
 
 function Splash({ children }: { children: ReactNode }) {
@@ -74,6 +75,7 @@ export default function App() {
         <Route path="/gallery" element={<Gallery />} />
         <Route path="/add" element={<Capture />} />
         <Route path="/people" element={<People />} />
+        <Route path="/tag" element={<QuickTag />} />
         <Route path="/you" element={<Dossier />} />
         {/* Sin Navigate a proposito: justo despues de registrarse, `me` pasa a
             truthy en un render donde la URL todavia no cambio (Onboard llama
@@ -83,7 +85,9 @@ export default function App() {
             Gallery inline (sin tocar el history) evita la carrera. */}
         <Route path="*" element={<Gallery />} />
       </Routes>
-      <Nav />
+      {/* /tag es un modo enfocado, no una pestaña: sin nav para que la unica
+          decision sea la que esta en pantalla. */}
+      {location.pathname === '/tag' ? null : <Nav />}
     </>
   )
 }
