@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useIdentity } from '../lib/identity'
 import { useEventData } from '../lib/useEventData'
-import { tagSelf, untagSelf } from '../lib/db'
+import { likePhoto, tagSelf, unlikePhoto, untagSelf } from '../lib/db'
 import { photoUrl } from '../lib/supabase'
 import Avatar from '../components/Avatar'
 import PhotoLightbox from '../components/PhotoLightbox'
@@ -10,9 +10,10 @@ import type { Attendee, Photo } from '../lib/types'
 
 export default function Gallery() {
   const { event, me } = useIdentity()
-  const { photos, attendees, tags, loading, refresh } = useEventData(event?.id)
+  const { photos, attendees, tags, likes, loading, refresh } = useEventData(event?.id)
   const [openId, setOpenId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [likeBusy, setLikeBusy] = useState(false)
 
   const byId = useMemo(
     () => new Map<string, Attendee>(attendees.map((a) => [a.id, a])),
@@ -32,6 +33,19 @@ export default function Gallery() {
     return map
   }, [tags, byId])
 
+  /** photo_id -> attendees que le dieron like */
+  const likers = useMemo(() => {
+    const map = new Map<string, Attendee[]>()
+    for (const like of likes) {
+      const person = byId.get(like.attendee_id)
+      if (!person) continue
+      const list = map.get(like.photo_id)
+      if (list) list.push(person)
+      else map.set(like.photo_id, [person])
+    }
+    return map
+  }, [likes, byId])
+
   const open = photos.find((p) => p.id === openId) ?? null
   const mineCount = me ? tags.filter((t) => t.attendee_id === me.id).length : 0
 
@@ -45,6 +59,19 @@ export default function Gallery() {
       await refresh()
     } finally {
       setBusy(false)
+    }
+  }
+
+  async function toggleLike(photo: Photo) {
+    if (!me || likeBusy) return
+    const likedIt = (likers.get(photo.id) ?? []).some((a) => a.id === me.id)
+    setLikeBusy(true)
+    try {
+      if (likedIt) await unlikePhoto(photo.id, me.id)
+      else await likePhoto(photo.id, me.id)
+      await refresh()
+    } finally {
+      setLikeBusy(false)
     }
   }
 
@@ -120,6 +147,10 @@ export default function Gallery() {
             photo={open}
             people={cast.get(open.id) ?? []}
             onClose={() => setOpenId(null)}
+            likedBy={likers.get(open.id) ?? []}
+            liked={me ? (likers.get(open.id) ?? []).some((a) => a.id === me.id) : false}
+            likeBusy={likeBusy}
+            onToggleLike={me ? () => void toggleLike(open) : undefined}
             footer={
               <ClaimButton
                 claimed={me ? (cast.get(open.id) ?? []).some((a) => a.id === me.id) : false}

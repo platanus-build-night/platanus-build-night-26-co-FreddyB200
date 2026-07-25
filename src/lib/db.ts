@@ -1,7 +1,7 @@
 import { supabase, PHOTOS_BUCKET, photoUrl } from './supabase'
 import { avatarColor } from './avatar'
 import { preparePhoto } from './image'
-import type { Attendee, Event, OnboardInput, Photo, PhotoTag } from './types'
+import type { Attendee, Event, OnboardInput, Photo, PhotoLike, PhotoTag } from './types'
 
 /** Slug del evento de esta noche. Es lo que apunta el QR. */
 export const EVENT_SLUG = import.meta.env.VITE_EVENT_SLUG ?? 'build-night'
@@ -162,6 +162,48 @@ export async function tagSelf(photoId: string, attendeeId: string): Promise<void
 export async function untagSelf(photoId: string, attendeeId: string): Promise<void> {
   const { error } = await supabase
     .from('photo_tags')
+    .delete()
+    .eq('photo_id', photoId)
+    .eq('attendee_id', attendeeId)
+
+  if (error) throw error
+}
+
+/**
+ * Todos los likes del evento. A diferencia de listTags, esto es best-effort:
+ * si la tabla photo_likes todavia no existe (schema recien agregado, puede
+ * no estar corrido en prod todavia) devuelve vacio en vez de tumbar todo lo
+ * demas que si depende de photos/attendees/tags.
+ */
+export async function listLikes(eventId: string): Promise<PhotoLike[]> {
+  try {
+    const { data, error } = await supabase
+      .from('photo_likes')
+      .select('photo_id, attendee_id, created_at, photos!inner(event_id)')
+      .eq('photos.event_id', eventId)
+
+    if (error) throw error
+    return (data ?? []).map((row) => ({
+      photo_id: row.photo_id as string,
+      attendee_id: row.attendee_id as string,
+      created_at: row.created_at as string,
+    }))
+  } catch {
+    return []
+  }
+}
+
+export async function likePhoto(photoId: string, attendeeId: string): Promise<void> {
+  const { error } = await supabase
+    .from('photo_likes')
+    .upsert({ photo_id: photoId, attendee_id: attendeeId }, { onConflict: 'photo_id,attendee_id' })
+
+  if (error) throw error
+}
+
+export async function unlikePhoto(photoId: string, attendeeId: string): Promise<void> {
+  const { error } = await supabase
+    .from('photo_likes')
     .delete()
     .eq('photo_id', photoId)
     .eq('attendee_id', attendeeId)

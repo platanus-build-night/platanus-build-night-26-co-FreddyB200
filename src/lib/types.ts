@@ -34,6 +34,13 @@ export type PhotoTag = {
   created_at: string
 }
 
+/** No alimenta el grafo (eso es solo PhotoTag) — es una señal aparte para fotos donde no sale nadie tageable. */
+export type PhotoLike = {
+  photo_id: string
+  attendee_id: string
+  created_at: string
+}
+
 /** Lo que el onboarding recolecta. El resto lo genera el sistema. */
 export type OnboardInput = {
   name: string

@@ -34,11 +34,20 @@ export default function PhotoLightbox({
   people,
   onClose,
   footer,
+  likedBy,
+  liked,
+  onToggleLike,
+  likeBusy,
 }: {
   photo: Photo
   people: Attendee[]
   onClose: () => void
   footer?: ReactNode
+  /** Quien le dio like — aparte del grafo, para fotos donde no sale nadie tageable. */
+  likedBy?: Attendee[]
+  liked?: boolean
+  onToggleLike?: () => void
+  likeBusy?: boolean
 }) {
   const [saving, setSaving] = useState(false)
 
@@ -61,22 +70,40 @@ export default function PhotoLightbox({
       aria-modal="true"
       className="fixed inset-0 z-30 flex flex-col bg-night/95 backdrop-blur"
     >
-      <div className="flex items-center justify-end gap-2 p-4">
-        <button
-          type="button"
-          onClick={onDownload}
-          disabled={saving}
-          className="rounded-lg px-3 py-1.5 font-mono text-sm text-muted transition-opacity disabled:opacity-40"
-        >
-          {saving ? 'Saving…' : 'Download'}
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-lg px-3 py-1.5 font-mono text-sm text-muted"
-        >
-          Close
-        </button>
+      <div className="flex items-center justify-between gap-2 p-4">
+        {onToggleLike ? (
+          <button
+            type="button"
+            onClick={onToggleLike}
+            disabled={likeBusy}
+            className={[
+              'flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-mono text-sm transition-opacity disabled:opacity-40',
+              liked ? 'text-signal' : 'text-muted',
+            ].join(' ')}
+          >
+            <span aria-hidden="true">{liked ? '♥' : '♡'}</span>
+            {likedBy && likedBy.length > 0 ? <span>{likedBy.length}</span> : null}
+          </button>
+        ) : (
+          <span />
+        )}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onDownload}
+            disabled={saving}
+            className="rounded-lg px-3 py-1.5 font-mono text-sm text-muted transition-opacity disabled:opacity-40"
+          >
+            {saving ? 'Saving…' : 'Download'}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg px-3 py-1.5 font-mono text-sm text-muted"
+          >
+            Close
+          </button>
+        </div>
       </div>
 
       <div className="flex min-h-0 flex-1 items-center justify-center px-4">
@@ -105,6 +132,23 @@ export default function PhotoLightbox({
               </li>
             ))}
           </ul>
+        ) : null}
+
+        {likedBy && likedBy.length > 0 ? (
+          <div className="mt-3">
+            <p className="font-mono text-[10px] tracking-[0.14em] text-muted uppercase">Liked by</p>
+            <ul className="mt-2 flex flex-wrap gap-2">
+              {likedBy.map((a) => (
+                <li
+                  key={a.id}
+                  className="flex items-center gap-2 rounded-full bg-surface py-1 pr-3 pl-1"
+                >
+                  <Avatar name={a.name} color={a.avatar_color} size={24} />
+                  <span className="text-sm text-ink">{a.name}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : null}
 
         {footer}

@@ -1,18 +1,19 @@
 import { useCallback, useEffect, useState } from 'react'
-import { listAttendees, listPhotos, listTags } from './db'
-import type { Attendee, Photo, PhotoTag } from './types'
+import { listAttendees, listLikes, listPhotos, listTags } from './db'
+import type { Attendee, Photo, PhotoLike, PhotoTag } from './types'
 
 export type EventData = {
   photos: Photo[]
   attendees: Attendee[]
   tags: PhotoTag[]
+  likes: PhotoLike[]
   loading: boolean
   error: string | null
   refresh: () => Promise<void>
 }
 
 /**
- * Carga fotos + attendees + tags del evento y refresca cada 10s.
+ * Carga fotos + attendees + tags + likes del evento y refresca cada 10s.
  * Durante el evento entra data de otros celulares constantemente; sin esto la
  * galeria se queda congelada en lo que habia al abrirla.
  */
@@ -20,20 +21,23 @@ export function useEventData(eventId: string | undefined, pollMs = 10_000): Even
   const [photos, setPhotos] = useState<Photo[]>([])
   const [attendees, setAttendees] = useState<Attendee[]>([])
   const [tags, setTags] = useState<PhotoTag[]>([])
+  const [likes, setLikes] = useState<PhotoLike[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
     if (!eventId) return
     try {
-      const [p, a, t] = await Promise.all([
+      const [p, a, t, l] = await Promise.all([
         listPhotos(eventId),
         listAttendees(eventId),
         listTags(eventId),
+        listLikes(eventId),
       ])
       setPhotos(p)
       setAttendees(a)
       setTags(t)
+      setLikes(l)
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo cargar el evento')
@@ -56,5 +60,5 @@ export function useEventData(eventId: string | undefined, pollMs = 10_000): Even
     }
   }, [refresh, pollMs])
 
-  return { photos, attendees, tags, loading, error, refresh }
+  return { photos, attendees, tags, likes, loading, error, refresh }
 }
