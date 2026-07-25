@@ -1,8 +1,27 @@
+import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { photoUrl } from '../lib/supabase'
 import { timeOf } from '../lib/graph'
 import Avatar from './Avatar'
 import type { Attendee, Photo } from '../lib/types'
+
+/**
+ * La foto vive en Supabase Storage (otro origen), asi que un <a download>
+ * plano no fuerza la descarga — el navegador solo abre la imagen. Bajarla
+ * como blob y disparar el <a> desde un object URL si funciona cross-origin.
+ */
+async function downloadPhoto(url: string, filename: string) {
+  const res = await fetch(url)
+  const blob = await res.blob()
+  const objectUrl = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = objectUrl
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(objectUrl)
+}
 
 /**
  * Foto a pantalla completa: hora + escena + quien esta tageado.
@@ -21,13 +40,36 @@ export default function PhotoLightbox({
   onClose: () => void
   footer?: ReactNode
 }) {
+  const [saving, setSaving] = useState(false)
+
+  async function onDownload() {
+    if (saving) return
+    setSaving(true)
+    try {
+      const ext = photo.storage_path.split('.').pop() || 'jpg'
+      await downloadPhoto(photoUrl(photo.storage_path), `overlap-${photo.id}.${ext}`)
+    } catch {
+      // best-effort: si falla (red, CORS), el usuario igual puede long-press la imagen
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <div
       role="dialog"
       aria-modal="true"
       className="fixed inset-0 z-30 flex flex-col bg-night/95 backdrop-blur"
     >
-      <div className="flex justify-end p-4">
+      <div className="flex items-center justify-end gap-2 p-4">
+        <button
+          type="button"
+          onClick={onDownload}
+          disabled={saving}
+          className="rounded-lg px-3 py-1.5 font-mono text-sm text-muted transition-opacity disabled:opacity-40"
+        >
+          {saving ? 'Saving…' : 'Download'}
+        </button>
         <button
           type="button"
           onClick={onClose}

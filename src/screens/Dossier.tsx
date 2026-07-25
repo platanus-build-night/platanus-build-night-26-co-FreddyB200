@@ -138,20 +138,18 @@ function PhotoStrip({ photos, onOpen }: { photos: Photo[]; onOpen: (id: string) 
       <div
         ref={ref}
         onScroll={onScroll}
-        className="flex items-start overflow-x-auto overflow-y-hidden px-5 pb-3.5 [-webkit-overflow-scrolling:touch] [scroll-snap-type:x_mandatory] [scrollbar-width:none]"
+        className="flex items-start overflow-x-auto overflow-y-hidden px-5 pb-3.5 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [touch-action:pan-x]"
       >
         {photos.map((photo, i) => (
           <button
             key={photo.id}
             type="button"
             onClick={() => onOpen(photo.id)}
-            className="relative shrink-0 border-0 bg-transparent p-0 [scroll-snap-align:center]"
+            className="relative shrink-0 border-0 bg-transparent p-0"
             style={{
               marginLeft: i === 0 ? 0 : -STRIP_OVERLAP,
               zIndex: photos.length - i,
               transform: `rotate(${i % 2 === 0 ? -1.1 : 1.4}deg)`,
-              animation: 'ov-rise 0.7s cubic-bezier(0.2,0.7,0.2,1) both',
-              animationDelay: `${0.12 + i * 0.07}s`,
             }}
           >
             <div className="relative overflow-hidden rounded-sm border border-border bg-surface shadow-[0_10px_24px_rgba(0,0,0,0.35)]">
