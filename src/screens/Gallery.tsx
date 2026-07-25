@@ -14,6 +14,7 @@ export default function Gallery() {
   const [openId, setOpenId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [likeBusy, setLikeBusy] = useState(false)
+  const [filter, setFilter] = useState<'all' | 'mine' | 'liked'>('all')
 
   const byId = useMemo(
     () => new Map<string, Attendee>(attendees.map((a) => [a.id, a])),
@@ -48,6 +49,17 @@ export default function Gallery() {
 
   const open = photos.find((p) => p.id === openId) ?? null
   const mineCount = me ? tags.filter((t) => t.attendee_id === me.id).length : 0
+
+  /** Con decenas de fotos en el pozo, encontrar las tuyas a puro scroll no va. */
+  const visible = useMemo(() => {
+    if (!me || filter === 'all') return photos
+    if (filter === 'mine') {
+      return photos.filter((p) => (cast.get(p.id) ?? []).some((a) => a.id === me.id))
+    }
+    return photos.filter((p) => (likers.get(p.id) ?? []).some((a) => a.id === me.id))
+  }, [photos, filter, me, cast, likers])
+
+  const likedCount = me ? likes.filter((l) => l.attendee_id === me.id).length : 0
 
   async function toggle(photo: Photo) {
     if (!me || busy) return
@@ -94,15 +106,47 @@ export default function Gallery() {
           ) : null}
         </header>
 
+        {me && photos.length > 0 ? (
+          <div className="mb-4 flex gap-2">
+            {(
+              [
+                { key: 'all', label: `All ${photos.length}` },
+                { key: 'mine', label: `I'm in ${mineCount}` },
+                { key: 'liked', label: `Liked ${likedCount}` },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setFilter(tab.key)}
+                className={[
+                  'rounded-full border px-3.5 py-1.5 font-mono text-[11px] transition-colors',
+                  filter === tab.key
+                    ? 'border-signal bg-signal/15 text-signal'
+                    : 'border-border text-muted',
+                ].join(' ')}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
         {loading && photos.length === 0 ? (
           <p className="py-16 text-center font-mono text-sm text-muted">Loading…</p>
         ) : photos.length === 0 ? (
           <p className="mt-6 rounded-2xl border border-dashed border-border px-5 py-10 text-center text-sm text-muted">
             No photos yet — be the first to add one.
           </p>
+        ) : visible.length === 0 ? (
+          <p className="mt-6 rounded-2xl border border-dashed border-border px-5 py-10 text-center text-sm text-muted">
+            {filter === 'mine'
+              ? "You haven't tagged yourself in any photo yet — switch to All and tap “That’s me” on the ones you're in."
+              : "You haven't liked anything yet."}
+          </p>
         ) : (
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {photos.map((photo) => {
+            {visible.map((photo) => {
               const people = cast.get(photo.id) ?? []
               const imIn = me ? people.some((a) => a.id === me.id) : false
               return (

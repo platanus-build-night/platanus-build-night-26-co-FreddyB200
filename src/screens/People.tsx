@@ -6,7 +6,9 @@ import Avatar from '../components/Avatar'
 import TopBar from '../components/TopBar'
 import ConnectRow from '../components/ConnectRow'
 import EventGraph from '../components/EventGraph'
-import type { Attendee, PhotoTag } from '../lib/types'
+import PhotoLightbox from '../components/PhotoLightbox'
+import Thumb from '../components/Thumb'
+import type { Attendee, Photo, PhotoTag } from '../lib/types'
 
 /**
  * El directorio de la sala. Existe porque el grafo solo muestra a quien ya se
@@ -19,6 +21,7 @@ export default function People() {
   const { photos, attendees, tags, loading } = useEventData(event?.id)
   const [query, setQuery] = useState('')
   const [openId, setOpenId] = useState<string | null>(null)
+  const [openPhotoId, setOpenPhotoId] = useState<string | null>(null)
 
   const byId = useMemo(
     () => new Map<string, Attendee>(attendees.map((a) => [a.id, a])),
@@ -41,6 +44,33 @@ export default function People() {
     }
     return map
   }, [photos])
+
+  /** attendee_id -> las fotos donde sale, para mostrarlas en su perfil. */
+  const photosOf = useMemo(() => {
+    const byPhoto = new Map(photos.map((p) => [p.id, p]))
+    const map = new Map<string, Photo[]>()
+    for (const t of tags) {
+      const photo = byPhoto.get(t.photo_id)
+      if (!photo) continue
+      const list = map.get(t.attendee_id)
+      if (list) list.push(photo)
+      else map.set(t.attendee_id, [photo])
+    }
+    return map
+  }, [photos, tags])
+
+  /** photo_id -> quienes salen, para el visor. */
+  const cast = useMemo(() => {
+    const map = new Map<string, Attendee[]>()
+    for (const t of tags) {
+      const person = byId.get(t.attendee_id)
+      if (!person) continue
+      const list = map.get(t.photo_id)
+      if (list) list.push(person)
+      else map.set(t.photo_id, [person])
+    }
+    return map
+  }, [tags, byId])
 
   /** Con quien coincidi yo, para poder ordenar y mostrar el peso. */
   const myOverlapWeight = useMemo(() => {
@@ -69,6 +99,8 @@ export default function People() {
       return new Date(y.created_at).getTime() - new Date(x.created_at).getTime()
     })
   }, [attendees, query, myOverlapWeight, me])
+
+  const openPhoto = photos.find((p) => p.id === openPhotoId) ?? null
 
   return (
     <>
@@ -117,11 +149,24 @@ export default function People() {
                 onToggle={() => setOpenId((cur) => (cur === person.id ? null : person.id))}
                 attendees={attendees}
                 tags={tags}
+                photos={photosOf.get(person.id) ?? []}
+                onOpenPhoto={setOpenPhotoId}
               />
             ))}
           </ul>
         )}
       </main>
+
+      {openPhoto ? (
+        <PhotoLightbox
+          photo={openPhoto}
+          people={cast.get(openPhoto.id) ?? []}
+          onClose={() => setOpenPhotoId(null)}
+          uploader={openPhoto.uploader_id ? (byId.get(openPhoto.uploader_id) ?? null) : null}
+          allAttendees={attendees}
+          allTags={tags}
+        />
+      ) : null}
     </>
   )
 }
@@ -136,6 +181,8 @@ function PersonCard({
   onToggle,
   attendees,
   tags,
+  photos,
+  onOpenPhoto,
 }: {
   person: Attendee
   isMe: boolean
@@ -146,6 +193,8 @@ function PersonCard({
   onToggle: () => void
   attendees: Attendee[]
   tags: PhotoTag[]
+  photos: Photo[]
+  onOpenPhoto: (id: string) => void
 }) {
   return (
     <li className="overflow-hidden rounded-[10px] border border-border bg-surface">
@@ -201,6 +250,21 @@ function PersonCard({
               <span className="text-signal">{uploaded}</span> uploaded
             </span>
           </div>
+
+          {photos.length > 0 ? (
+            <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
+              {photos.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => onOpenPhoto(p.id)}
+                  className="block h-16 w-16 shrink-0 overflow-hidden rounded-sm border border-border bg-night"
+                >
+                  <Thumb photo={p} />
+                </button>
+              ))}
+            </div>
+          ) : null}
 
           {isMe ? null : <ConnectRow attendee={person} />}
 
