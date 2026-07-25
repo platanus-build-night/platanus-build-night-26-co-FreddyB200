@@ -1,28 +1,71 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { getAttendeeByToken, getEvent, registerAttendee } from './db'
+import { useLocation } from 'react-router-dom'
+import { EVENT_SLUG, getAttendeeByToken, getEvent, registerAttendee } from './db'
 import type { Attendee, Event, OnboardInput } from './types'
 
 /**
- * Identidad sin auth (seccion 4 del CLAUDE.md).
- * El device_token vive en localStorage. En este browser el usuario "es" ese
- * attendee para siempre. Sin email, sin password, sin recuperacion.
+ * Identidad sin auth (seccion 4 del CLAUDE.md), ahora por-evento.
+ * El evento activo se resuelve de la URL (/e/:slug); si no hay slug en la
+ * ruta, cae al ultimo evento usado y despues al EVENT_SLUG de siempre. Cada
+ * evento tiene su propio device_token en localStorage, asi el mismo celular
+ * puede estar registrado en varios eventos sin pisarse.
  */
-const TOKEN_KEY = 'overlap.device_token'
+const ACTIVE_SLUG_KEY = 'overlap.active_slug'
+/** Key global de antes del multi-evento — un attendee ya vive ahi para el evento default. */
+const LEGACY_TOKEN_KEY = 'overlap.device_token'
 
-function readToken(): string | null {
+function tokenKeyFor(slug: string): string {
+  return `overlap.device_token.${slug}`
+}
+
+function slugFromPath(pathname: string): string | null {
+  const match = /^\/e\/([^/]+)/.exec(pathname)
+  return match ? decodeURIComponent(match[1]) : null
+}
+
+function readActiveSlug(): string | null {
   try {
-    return localStorage.getItem(TOKEN_KEY)
+    return localStorage.getItem(ACTIVE_SLUG_KEY)
   } catch {
     return null
   }
 }
 
-function writeToken(token: string): void {
+function writeActiveSlug(slug: string): void {
   try {
-    localStorage.setItem(TOKEN_KEY, token)
+    localStorage.setItem(ACTIVE_SLUG_KEY, slug)
   } catch {
     // modo privado / storage bloqueado: la sesion dura lo que dure la pestana
+  }
+}
+
+function readToken(slug: string): string | null {
+  try {
+    const scoped = localStorage.getItem(tokenKeyFor(slug))
+    if (scoped) return scoped
+    // Compat: la sesion de antes del multi-evento vivia en una key global y
+    // siempre era del evento default. No perder ese registro.
+    return slug === EVENT_SLUG ? localStorage.getItem(LEGACY_TOKEN_KEY) : null
+  } catch {
+    return null
+  }
+}
+
+function writeToken(slug: string, token: string): void {
+  try {
+    localStorage.setItem(tokenKeyFor(slug), token)
+  } catch {
+    // modo privado / storage bloqueado: la sesion dura lo que dure la pestana
+  }
+}
+
+function clearToken(slug: string): void {
+  try {
+    localStorage.removeItem(tokenKeyFor(slug))
+    if (slug === EVENT_SLUG) localStorage.removeItem(LEGACY_TOKEN_KEY)
+  } catch {
+    /* no-op */
   }
 }
 
@@ -38,25 +81,34 @@ type IdentityState = {
 const IdentityContext = createContext<IdentityState | null>(null)
 
 export function IdentityProvider({ children }: { children: ReactNode }) {
+  const location = useLocation()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [event, setEvent] = useState<Event | null>(null)
   const [me, setMe] = useState<Attendee | null>(null)
 
+  const slug = useMemo(
+    () => slugFromPath(location.pathname) ?? readActiveSlug() ?? EVENT_SLUG,
+    [location.pathname],
+  )
+
   useEffect(() => {
     let cancelled = false
+    setLoading(true)
 
     ;(async () => {
       try {
-        const ev = await getEvent()
+        const ev = await getEvent(slug)
         if (cancelled) return
         setEvent(ev)
 
-        const token = readToken()
+        const token = readToken(slug)
         if (token) {
           const attendee = await getAttendeeByToken(token)
           if (cancelled) return
           setMe(attendee)
+        } else {
+          setMe(null)
         }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Error desconocido')
@@ -68,27 +120,24 @@ export function IdentityProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [slug])
 
   const register = useCallback(
     async (input: OnboardInput) => {
       if (!event) throw new Error('El evento todavia no cargo')
       const attendee = await registerAttendee(event.id, input)
-      writeToken(attendee.device_token)
+      writeToken(slug, attendee.device_token)
+      writeActiveSlug(slug)
       setMe(attendee)
       return attendee
     },
-    [event],
+    [event, slug],
   )
 
   const signOut = useCallback(() => {
-    try {
-      localStorage.removeItem(TOKEN_KEY)
-    } catch {
-      /* no-op */
-    }
+    clearToken(slug)
     setMe(null)
-  }, [])
+  }, [slug])
 
   const value = useMemo<IdentityState>(
     () => ({ loading, error, event, me, register, signOut }),

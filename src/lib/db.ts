@@ -18,6 +18,35 @@ export async function getEvent(slug: string = EVENT_SLUG): Promise<Event> {
   return data
 }
 
+/** "Café Night!" -> "cafe-night-a1b2". El sufijo evita choques con el unique de `slug`. */
+function slugify(name: string): string {
+  // NFD separa "é" en "e" + un caracter de acento combinable aparte (bloque
+  // Unicode 0x300-0x36f); filtrarlos deja "e" y transforma "café" en "cafe".
+  const noAccents = Array.from(name.trim().toLowerCase().normalize('NFD'))
+    .filter((ch) => {
+      const code = ch.codePointAt(0) ?? 0
+      return code < 0x300 || code > 0x36f
+    })
+    .join('')
+  const base = noAccents.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  const suffix = Math.random().toString(36).slice(2, 6)
+  return `${base || 'event'}-${suffix}`
+}
+
+export async function createEvent(name: string): Promise<Event> {
+  const trimmed = name.trim()
+  if (!trimmed) throw new Error('El nombre del evento es obligatorio')
+
+  const { data, error } = await supabase
+    .from('events')
+    .insert({ name: trimmed, slug: slugify(trimmed) })
+    .select()
+    .single<Event>()
+
+  if (error) throw error
+  return data
+}
+
 export async function getAttendeeByToken(deviceToken: string): Promise<Attendee | null> {
   const { data, error } = await supabase
     .from('attendees')

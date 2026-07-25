@@ -20,7 +20,7 @@
 
 El grafo es el corazón. Construir en este orden estricto — cada capa debe funcionar antes de pasar a la siguiente:
 
-1. **Onboarding + Colector** — QR → "Who are you?" (name, GitHub, LinkedIn opcional, "What are you building?") → identidad guardada. Subir fotos desde la cámara del cel.
+1. **Evento + Onboarding + Colector** — un organizador crea el evento en `/new` (nombre → slug único) y se lleva un QR real que apunta a `/e/<slug>`. Quien lo escanea cae en "Who are you?" (name, GitHub, LinkedIn/WhatsApp opcionales, "What are you building?") → identidad guardada, ligada a ESE evento (ver sección 4). Subir fotos desde la cámara del cel.
 2. **Galería + auto-tag** — todos ven las fotos; cada quien se toca a sí mismo en las que sale ("That's me") → recupera sus fotos Y alimenta el grafo en el mismo gesto.
 3. **Grafo + Dossier** — por persona: con quién coincidió (aristas = fotos compartidas), la evidencia visual, y el mensaje de follow-up + link a GitHub. **Este es el clímax de la demo.** El grafo se calcula igual (`src/lib/graph.ts`), pero desde que se importó el lenguaje visual canónico (sección 6) el Dossier se ve como un recap — hero + tira de fotos + riel de gente — en vez de una visualización de grafo en vivo; ver nota en sección 6.
 4. **UX/pulido** — aplicar los tokens de diseño (sección 6).
@@ -33,7 +33,7 @@ El grafo es el corazón. Construir en este orden estricto — cada capa debe fun
 - ❌ Creador de avatar. Chip de iniciales sobre color autogenerado.
 - ❌ Video, curaduría por calidad, dashboard de organizador, sponsors, integración Luma/Meetup.
 - ❌ El post de LinkedIn generado por IA como feature central. Guarnición opcional al final si sobra tiempo.
-- ❌ **Pasaporte cross-evento** (ver sección 5.1). El SCHEMA lo soporta desde hoy (campo `event_id`), pero la vista "coincidieron en N eventos" NO se construye — solo hay un evento con data esta noche. Es visión de pitch, no build.
+- ❌ **Pasaporte cross-evento** (ver sección 5.1). Crear/unirse a eventos SÍ está construido (`/new`, `/e/:slug`), pero la vista "coincidieron en N eventos" que cruza identidades ENTRE eventos NO — cada evento es una isla. Es visión de pitch, no build.
 
 **Regla de oro:** el clímax de la demo debe ser un momento de DATA (el grafo de esta sala), no un momento de LLM (un texto generado). ChatGPT no tiene la data; ese es el foso.
 
@@ -84,8 +84,8 @@ La anon key de Supabase es pública por diseño. Con RLS apagado, cualquiera con
 
 ## 4. Identidad sin auth
 
-- Al registrarse (tras escanear QR) se crea una fila en `attendees` con un `device_token` (uuid).
-- Ese token se guarda en `localStorage`. En ese navegador el usuario "es" ese attendee para siempre, sin volver a ver registro.
+- Al registrarse (tras escanear QR, que apunta a `/e/<slug>`) se crea una fila en `attendees` con un `device_token` (uuid), ligada al evento de ese slug.
+- Ese token se guarda en `localStorage`, **una key por evento** (`overlap.device_token.<slug>`, ver `src/lib/identity.tsx`) — el mismo celular puede estar registrado en varios eventos sin pisarse. El evento activo se resuelve de la URL (`/e/:slug`); sin slug en la ruta cae al último evento usado y despues al `VITE_EVENT_SLUG` de siempre (así la URL raíz sigue funcionando igual que antes de que existiera el multi-evento).
 - Sin email, sin contraseña, sin recuperación. Cambio de dispositivo = re-registro. Suficiente para esta noche.
 
 ---
@@ -93,7 +93,7 @@ La anon key de Supabase es pública por diseño. Con RLS apagado, cualquiera con
 ## 5. Modelo de datos
 
 ```sql
--- events: soporta multi-evento desde hoy (aunque esta noche solo hay uno).
+-- events: multi-evento real desde hoy — /new los crea, cada uno con su QR.
 create table events (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -144,8 +144,12 @@ create table photo_tags (
 - Momento compartido con Y = las fotos que X e Y comparten (evidencia visual, tap para verla a pantalla completa con `scene_description` + `taken_at`) + el rango horario real (`sharedRange` en `graph.ts`). **NO inventar de qué hablaron** — solo afirmar el momento compartido real. El follow-up engancha en ese momento real.
 - Conexión: GitHub es el canal primario (siempre que la persona lo haya compartido); LinkedIn y WhatsApp (`wa.me/<numero>`) son botones-ícono secundarios, solo si esa persona los agregó en el onboarding.
 
-### 5.1. Pasaporte cross-evento (ROADMAP — no construir hoy)
-El `event_id` en `attendees`/`photos` permite, mañana, la vista "tú y Andrés coincidieron en N eventos" (misma query del grafo, agrupando por evento en vez de por foto, uniendo identidades por `github` o `device_token`). Hoy hay un solo evento → mostrarlo daría "1 evento" y no impresiona. **Se vende en el pitch, no se construye.** Frase de cierre del pitch: *"Y esto es solo una noche. Overlap recuerda cada evento — ves con quién te sigues cruzando en la escena, hackathon tras hackathon."*
+### 5.1. Crear/unirse a eventos (CONSTRUIDO) vs. pasaporte cross-evento (ROADMAP)
+
+**Importante no confundir estas dos cosas — son features distintas:**
+
+- **Crear/unirse a eventos — ya construido.** `/new` crea una fila en `events` (nombre → slug único) y muestra su QR (`src/screens/CreateEvent.tsx`, `qrcode` client-side, sin servicio externo). `/e/<slug>` es la puerta de entrada de ESE evento — `identity.tsx` resuelve el evento activo de la URL. Cada evento vive aislado: su propio roster, sus propias fotos, su propio grafo.
+- **Pasaporte cross-evento — sigue sin construirse.** La vista "tú y Andrés coincidieron en N eventos" (agrupar por evento en vez de por foto, uniendo identidades entre eventos por `github` o `device_token`) es harina de otro costal: hoy cada evento es una isla, un mismo attendee registrado en dos eventos son dos filas sin relación entre sí. **Se vende en el pitch, no se construye.** Frase de cierre del pitch: *"Y esto es solo una noche. Overlap recuerda cada evento — ves con quién te sigues cruzando en la escena, hackathon tras hackathon."*
 
 ---
 
