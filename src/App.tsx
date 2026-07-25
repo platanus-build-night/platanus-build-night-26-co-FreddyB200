@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useIdentity } from './lib/identity'
+import { supabaseConfigured } from './lib/supabase'
 import Nav from './components/Nav'
 import Onboard from './screens/Onboard'
 import Capture from './screens/Capture'
@@ -17,6 +18,20 @@ function Splash({ children }: { children: ReactNode }) {
 
 export default function App() {
   const { loading, error, me } = useIdentity()
+
+  // Falla explicita en vez de pantalla en blanco: las VITE_* se hornean al
+  // buildear, asi que esto casi siempre significa "faltan en el env de Vercel".
+  if (!supabaseConfigured) {
+    return (
+      <Splash>
+        <h1 className="font-display text-2xl font-bold text-ink">Not configured</h1>
+        <p className="mt-3 max-w-xs font-mono text-sm text-muted">
+          Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY at build time. Set them in the
+          Vercel env and redeploy.
+        </p>
+      </Splash>
+    )
+  }
 
   if (loading) {
     return (
