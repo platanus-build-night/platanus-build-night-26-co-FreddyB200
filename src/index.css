@@ -1,0 +1,42 @@
+@import 'tailwindcss';
+
+/* Tokens de la seccion 6 del CLAUDE.md. En Tailwind v4 el tema se define aca,
+   no en tailwind.config.ts. Cada token genera utilidades (bg-base, text-muted...). */
+@theme {
+  /* "base" chocaria con el text-base de Tailwind (font-size), asi que "night". */
+  --color-night: #14132a; /* indigo medianoche */
+  --color-surface: #1e1c3a; /* cards */
+  --color-ink: #f5f3ff; /* texto principal */
+  --color-muted: #9b97c4; /* texto tenue */
+  --color-link: #8b7cf0; /* periwinkle — aristas del grafo */
+  --color-signal: #f5b942; /* ambar — tu nodo, highlights */
+
+  --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+}
+
+html {
+  background-color: var(--color-night);
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background-color: var(--color-night);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* La constelacion se anima una sola vez al cargar el dossier; todo lo demas
+   queda quieto. Respetamos la preferencia del sistema. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

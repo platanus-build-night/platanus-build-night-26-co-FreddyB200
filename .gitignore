@@ -1,0 +1,54 @@
+# deps
+node_modules/
+.pnp
+.pnp.js
+
+# build
+dist/
+dist-ssr/
+build/
+*.local
+
+# env — NUNCA commitear keys (ANTHROPIC_API_KEY, supabase, etc.)
+.env
+.env.*
+!.env.example
+
+# vercel
+.vercel/
+
+# supabase (CLI local)
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+
+# logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# editores
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# os
+.DS_Store
+Thumbs.db
+
+# WSL / Windows: metadata de "archivo bajado de internet"
+*:Zone.Identifier
+
+# cache de herramientas
+.eslintcache
+.cache/
+*.tsbuildinfo
