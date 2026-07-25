@@ -4,7 +4,7 @@ import { useIdentity } from '../lib/identity'
 import { useEventData } from '../lib/useEventData'
 import { formatSpan, overlapsFor, photosFor, sharedRange, timeOf, timeRange } from '../lib/graph'
 import { photoUrl } from '../lib/supabase'
-import { whatsappUrl } from '../lib/db'
+import { myPhotosZipUrl, whatsappUrl } from '../lib/db'
 import Avatar from '../components/Avatar'
 import TopBar from '../components/TopBar'
 import PhotoLightbox from '../components/PhotoLightbox'
@@ -71,6 +71,7 @@ export default function Dossier() {
           <>
             <Hero photos={myPhotos} overlapCount={overlaps.length} />
             <PhotoStrip photos={chronological} onOpen={setOpenPhotoId} />
+            <SaveButton attendeeId={me.id} />
             {overlaps.length > 0 ? (
               <PeopleSection overlaps={overlaps} photos={photos} onOpenPhoto={setOpenPhotoId} />
             ) : (
@@ -180,6 +181,26 @@ function PhotoStrip({ photos, onOpen }: { photos: Photo[]; onOpen: (id: string) 
           />
         ))}
       </div>
+    </div>
+  )
+}
+
+/**
+ * ZIP con todas tus fotos, armado server-side (api/download.ts). Es un <a
+ * download> plano a proposito — dejamos que el navegador maneje la descarga,
+ * es lo unico confiable en movil.
+ */
+function SaveButton({ attendeeId }: { attendeeId: string }) {
+  return (
+    <div className="px-5 pb-2">
+      <a
+        href={myPhotosZipUrl(attendeeId)}
+        download
+        className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border bg-night px-3.5 py-2.5 font-display text-[13px] font-medium text-ink transition-colors hover:border-signal hover:text-signal"
+      >
+        <span>Save my photos</span>
+        <span className="font-mono text-[11px] opacity-60">↓</span>
+      </a>
     </div>
   )
 }
