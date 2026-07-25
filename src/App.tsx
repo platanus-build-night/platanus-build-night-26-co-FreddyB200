@@ -7,6 +7,7 @@ import Onboard from './screens/Onboard'
 import CreateEvent from './screens/CreateEvent'
 import Capture from './screens/Capture'
 import Gallery from './screens/Gallery'
+import People from './screens/People'
 import Dossier from './screens/Dossier'
 
 function Splash({ children }: { children: ReactNode }) {
@@ -72,6 +73,7 @@ export default function App() {
       <Routes>
         <Route path="/gallery" element={<Gallery />} />
         <Route path="/add" element={<Capture />} />
+        <Route path="/people" element={<People />} />
         <Route path="/you" element={<Dossier />} />
         {/* Sin Navigate a proposito: justo despues de registrarse, `me` pasa a
             truthy en un render donde la URL todavia no cambio (Onboard llama
