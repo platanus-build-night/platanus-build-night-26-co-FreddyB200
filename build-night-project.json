@@ -1,5 +1,5 @@
 {
-  "project-name": "<FILL THIS>",
-  "project-oneliner": "<FILL THIS>",
-  "project-description": "<FILL THIS>"
+  "project-name": "Overlap",
+  "project-oneliner": "The photo pool that turns a dev event into a graph of who you actually met.",
+  "project-description": "Overlap is a shared photo pool for dev events (hackathons, meetups). Everyone uploads their photos into one pool; everyone taps themselves in the ones they're in (\"That's me\") to claim their photos back — and that same tap is the data. From it, Overlap builds a live graph of who overlapped with whom, backed by real shared photos and real timestamps, not guesses. Your recap shows exactly who you crossed paths with, the evidence, and a one-tap way to connect on GitHub, LinkedIn or WhatsApp — so the people you met tonight don't evaporate tomorrow. No facial recognition, no login, no LLM-generated fluff at the climax: just the room's real data, rendered back to you."
 }
