@@ -8,6 +8,7 @@ import ConnectRow from '../components/ConnectRow'
 import EventGraph from '../components/EventGraph'
 import PhotoLightbox from '../components/PhotoLightbox'
 import Thumb from '../components/Thumb'
+import { downloadVCards } from '../lib/vcard'
 import type { Attendee, Photo, PhotoTag } from '../lib/types'
 
 /**
@@ -102,6 +103,12 @@ export default function People() {
 
   const openPhoto = photos.find((p) => p.id === openPhotoId) ?? null
 
+  /** Solo tiene sentido exportar a quien dejo alguna forma de contacto. */
+  const contactable = useMemo(
+    () => attendees.filter((a) => a.id !== me?.id && (a.github || a.linkedin || a.whatsapp)),
+    [attendees, me],
+  )
+
   return (
     <>
       <TopBar />
@@ -117,6 +124,17 @@ export default function People() {
           <p className="mt-3 font-mono text-xs text-signal">
             {attendees.length} {attendees.length === 1 ? 'person' : 'people'} in the room
           </p>
+
+          {contactable.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => downloadVCards(contactable, event?.name ?? 'the event')}
+              className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-border bg-night px-3.5 py-2.5 font-display text-[13px] font-medium text-ink transition-colors hover:border-signal hover:text-signal"
+            >
+              <span>Save {contactable.length} contacts to my phone</span>
+              <span className="font-mono text-[11px] opacity-60">↓</span>
+            </button>
+          ) : null}
         </header>
 
         {attendees.length > 4 ? (

@@ -1,7 +1,15 @@
 import { useMemo, useRef, useState } from 'react'
 import { useIdentity } from '../lib/identity'
 import { useEventData } from '../lib/useEventData'
-import { formatSpan, overlapsFor, photosFor, sharedRange, timeOf, timeRange } from '../lib/graph'
+import {
+  buildEdges,
+  formatSpan,
+  overlapsFor,
+  photosFor,
+  sharedRange,
+  timeOf,
+  timeRange,
+} from '../lib/graph'
 import { photoUrl } from '../lib/supabase'
 import { likePhoto, myLikesZipUrl, myPhotosZipUrl, unlikePhoto } from '../lib/db'
 import Avatar from '../components/Avatar'
@@ -9,7 +17,7 @@ import TopBar from '../components/TopBar'
 import PhotoLightbox from '../components/PhotoLightbox'
 import ConnectRow from '../components/ConnectRow'
 import EventGraph from '../components/EventGraph'
-import type { Attendee, Photo } from '../lib/types'
+import type { Attendee, Photo, PhotoTag } from '../lib/types'
 import type { Overlap } from '../lib/graph'
 
 const STRIP_CARD_W = 220
@@ -124,6 +132,13 @@ export default function Dossier() {
               photos={myLikedPhotos}
               attendeeId={me.id}
               onOpen={setOpenPhotoId}
+            />
+
+            <NightStats
+              photos={photos}
+              attendees={attendees}
+              tags={tags}
+              likes={likes.length}
             />
 
             {myPhotos.length > 0 ? (
@@ -258,6 +273,57 @@ function SaveButton({ attendeeId }: { attendeeId: string }) {
         <span className="font-mono text-[11px] opacity-60">↓</span>
       </a>
     </div>
+  )
+}
+
+/** Los numeros reales de la noche — del evento entero, no solo tuyos. */
+function NightStats({
+  photos,
+  attendees,
+  tags,
+  likes,
+}: {
+  photos: Photo[]
+  attendees: Attendee[]
+  tags: PhotoTag[]
+  likes: number
+}) {
+  const connections = useMemo(() => buildEdges(tags).length, [tags])
+  const span = formatSpan(timeRange(photos))
+
+  const items = [
+    { value: photos.length, label: 'photos' },
+    { value: attendees.length, label: 'people' },
+    { value: connections, label: connections === 1 ? 'connection' : 'connections' },
+    { value: likes, label: 'likes' },
+  ]
+
+  return (
+    <section className="mt-9 border-t border-border pt-7">
+      <div className="px-5">
+        <h2 className="font-display text-[21px] font-medium tracking-[-0.02em] text-ink">
+          The night in numbers
+        </h2>
+        {span ? (
+          <p className="mt-1.5 font-mono text-[10px] tracking-[0.14em] text-muted uppercase">
+            {span} of it, so far
+          </p>
+        ) : null}
+      </div>
+
+      <dl className="mt-4 grid grid-cols-2 gap-2 px-5">
+        {items.map((item) => (
+          <div key={item.label} className="rounded-[10px] border border-border bg-surface p-3.5">
+            <dt className="font-mono text-[10px] tracking-[0.14em] text-muted uppercase">
+              {item.label}
+            </dt>
+            <dd className="mt-1 font-display text-[28px] leading-none font-medium text-signal">
+              {item.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   )
 }
 

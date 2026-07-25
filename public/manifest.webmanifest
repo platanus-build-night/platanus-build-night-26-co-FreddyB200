@@ -1,0 +1,17 @@
+{
+  "name": "Overlap",
+  "short_name": "Overlap",
+  "description": "The photo pool that turns a dev event into a graph of who you actually met.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#16151A",
+  "theme_color": "#16151A",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
