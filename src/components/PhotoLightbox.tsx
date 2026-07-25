@@ -128,10 +128,7 @@ export default function PhotoLightbox({
           </button>
         </div>
 
-        {photo.scene_description ? (
-          <p className="mt-4 text-sm text-muted">{photo.scene_description}</p>
-        ) : null}
-        <p className="mt-1 font-mono text-xs text-muted/70">
+        <p className="mt-4 font-mono text-xs text-muted/70">
           {timeOf(photo)}
           {uploader ? <> · Uploaded by {uploader.name}</> : null}
         </p>

@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { buildEdges } from '../lib/graph'
 import { initials } from '../lib/avatar'
+import Avatar from './Avatar'
+import ConnectRow from './ConnectRow'
 import type { Attendee, PhotoTag } from '../lib/types'
 import type { Edge } from '../lib/graph'
 
@@ -101,7 +103,8 @@ function layout(nodeIds: string[], edges: Edge[]): Map<string, Pos> {
 /**
  * El grafo completo del evento — no solo tus coincidencias, todo el cuarto.
  * Nodos = attendees tageados en algo; aristas = fotos compartidas, grosor y
- * brillo por peso. Tu nodo se marca en dorado. Tocar un nodo revela el nombre.
+ * brillo por peso. Tu nodo se marca en dorado. Tocar un nodo revela su
+ * ConnectRow debajo del grafo — cierra el loop, no solo muestra el nombre.
  */
 export default function EventGraph({
   attendees,
@@ -128,6 +131,7 @@ export default function EventGraph({
   )
 
   const positions = useMemo(() => layout(nodeIds, edges), [nodeIds, edges])
+  const revealed = revealId ? (byId.get(revealId) ?? null) : null
 
   if (nodeIds.length < 2) return null
 
@@ -202,22 +206,22 @@ export default function EventGraph({
               >
                 {initials(person.name)}
               </text>
-              {revealId === id ? (
-                <text
-                  x={pos.x}
-                  y={Math.min(SIZE - 6, pos.y + r + 13)}
-                  textAnchor="middle"
-                  fontSize="9"
-                  fontFamily="'JetBrains Mono', monospace"
-                  fill="var(--color-ink)"
-                >
-                  {isMe ? 'You' : person.name}
-                </text>
-              ) : null}
             </g>
           )
         })}
       </svg>
+
+      {revealed ? (
+        <div className="mx-5 mt-3 rounded-[10px] border border-border bg-surface p-3.5">
+          <div className="flex items-center gap-3">
+            <Avatar name={revealed.name} color={revealed.avatar_color} size={40} />
+            <p className="font-display text-[15px] font-medium tracking-[-0.01em] text-ink">
+              {revealed.id === meId ? 'You' : revealed.name}
+            </p>
+          </div>
+          {revealed.id === meId ? null : <ConnectRow attendee={revealed} />}
+        </div>
+      ) : null}
     </section>
   )
 }
