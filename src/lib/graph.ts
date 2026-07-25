@@ -82,6 +82,58 @@ export function timeOf(photo: Photo): string {
   })
 }
 
+export type Moment = {
+  key: string
+  label: string
+  photos: Photo[]
+}
+
+/**
+ * Agrupa las fotos en "momentos" por cercania en el tiempo.
+ *
+ * Carpetas manuales serian el equivalente pero nadie las va a crear en medio
+ * de un evento — la gente ya no se esta ni tageando. Esto se arma solo con la
+ * hora real de cada foto: si pasan mas de GAP minutos sin fotos, empieza un
+ * momento nuevo. Da el orden sin pedirle trabajo a nadie.
+ */
+const MOMENT_GAP_MS = 45 * 60 * 1000
+
+export function groupIntoMoments(photos: Photo[]): Moment[] {
+  if (photos.length === 0) return []
+
+  const when = (p: Photo) => new Date(p.taken_at ?? p.created_at).getTime()
+  const sorted = [...photos].sort((a, b) => when(b) - when(a)) // mas nuevas primero
+
+  const groups: Photo[][] = []
+  let current: Photo[] = []
+
+  for (const photo of sorted) {
+    if (current.length === 0) {
+      current.push(photo)
+      continue
+    }
+    const prev = when(current[current.length - 1])
+    if (prev - when(photo) > MOMENT_GAP_MS) {
+      groups.push(current)
+      current = [photo]
+    } else {
+      current.push(photo)
+    }
+  }
+  if (current.length > 0) groups.push(current)
+
+  return groups.map((group) => {
+    const start = new Date(when(group[group.length - 1]))
+    const end = new Date(when(group[0]))
+    const same = fmtTime(start) === fmtTime(end)
+    return {
+      key: `${start.getTime()}-${group.length}`,
+      label: same ? fmtTime(start) : `${fmtTime(start)} – ${fmtTime(end)}`,
+      photos: group,
+    }
+  })
+}
+
 /** Rango horario (min/max) de una lista de fotos. null si no hay ninguna. */
 export function timeRange(photos: Photo[]): { start: Date; end: Date } | null {
   if (photos.length === 0) return null

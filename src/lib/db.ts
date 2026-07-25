@@ -165,6 +165,15 @@ export async function tagSelf(photoId: string, attendeeId: string): Promise<void
   if (error) throw error
 }
 
+/**
+ * Taguear a OTRA persona. Es la misma fila que tagSelf — la tabla no distingue
+ * quien puso el tag — pero el nombre importa en los call sites: quien subio la
+ * foto ya sabe quien sale, y esperar a que cada uno se auto-tagee deja el grafo
+ * vacio (23 de 31 fotos sin nadie, medido en vivo). Quien no quiera puede
+ * destaguearse con untagSelf.
+ */
+export const tagPerson = tagSelf
+
 export async function untagSelf(photoId: string, attendeeId: string): Promise<void> {
   const { error } = await supabase
     .from('photo_tags')

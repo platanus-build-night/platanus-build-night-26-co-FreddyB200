@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react'
 import { useIdentity } from '../lib/identity'
 import { useEventData } from '../lib/useEventData'
-import { likePhoto, tagSelf, unlikePhoto, untagSelf } from '../lib/db'
+import { likePhoto, tagPerson, tagSelf, unlikePhoto, untagSelf } from '../lib/db'
 import Avatar from '../components/Avatar'
 import PhotoLightbox from '../components/PhotoLightbox'
+import NewTagsBanner from '../components/NewTagsBanner'
 import Thumb from '../components/Thumb'
 import TopBar from '../components/TopBar'
+import { markSeen } from '../lib/seen'
+import { groupIntoMoments } from '../lib/graph'
 import type { Attendee, Photo } from '../lib/types'
 
 export default function Gallery() {
@@ -15,6 +18,8 @@ export default function Gallery() {
   const [busy, setBusy] = useState(false)
   const [likeBusy, setLikeBusy] = useState(false)
   const [filter, setFilter] = useState<'all' | 'mine' | 'liked'>('all')
+  const [dismissed, setDismissed] = useState(false)
+  const slug = event?.slug ?? ''
 
   const byId = useMemo(
     () => new Map<string, Attendee>(attendees.map((a) => [a.id, a])),
@@ -60,6 +65,7 @@ export default function Gallery() {
   }, [photos, filter, me, cast, likers])
 
   const likedCount = me ? likes.filter((l) => l.attendee_id === me.id).length : 0
+  const moments = useMemo(() => groupIntoMoments(visible), [visible])
 
   async function toggle(photo: Photo) {
     if (!me || busy) return
@@ -68,6 +74,21 @@ export default function Gallery() {
     try {
       if (inIt) await untagSelf(photo.id, me.id)
       else await tagSelf(photo.id, me.id)
+      // Tu propio tag no deberia avisarte a vos mismo (la tabla no guarda
+      // quien lo puso, asi que lo marcamos visto en el momento).
+      markSeen(slug)
+      setDismissed(true)
+      await refresh()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function tagOther(photoId: string, attendeeId: string) {
+    if (busy) return
+    setBusy(true)
+    try {
+      await tagPerson(photoId, attendeeId)
       await refresh()
     } finally {
       setBusy(false)
@@ -105,6 +126,17 @@ export default function Gallery() {
             </p>
           ) : null}
         </header>
+
+        {me && slug && !dismissed ? (
+          <NewTagsBanner
+            slug={slug}
+            meId={me.id}
+            tags={tags}
+            photos={photos}
+            onOpen={setOpenId}
+            onDismiss={() => setDismissed(true)}
+          />
+        ) : null}
 
         {me && photos.length > 0 ? (
           <div className="mb-4 flex gap-2">
@@ -145,40 +177,55 @@ export default function Gallery() {
               : "You haven't liked anything yet."}
           </p>
         ) : (
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {visible.map((photo) => {
-              const people = cast.get(photo.id) ?? []
-              const imIn = me ? people.some((a) => a.id === me.id) : false
-              return (
-                <li key={photo.id}>
-                  <button
-                    type="button"
-                    onClick={() => setOpenId(photo.id)}
-                    className={[
-                      'relative block aspect-square w-full overflow-hidden rounded-xl bg-surface',
-                      imIn ? 'ring-2 ring-signal' : '',
-                    ].join(' ')}
-                  >
-                    <Thumb photo={photo} />
-                    {people.length > 0 ? (
-                      <span className="absolute bottom-1.5 left-1.5 flex -space-x-2">
-                        {people.slice(0, 3).map((a) => (
-                          <span key={a.id} className="rounded-full ring-2 ring-night">
-                            <Avatar name={a.name} color={a.avatar_color} size={22} />
-                          </span>
-                        ))}
-                        {people.length > 3 ? (
-                          <span className="flex h-[22px] items-center rounded-full bg-night/90 px-1.5 font-mono text-[10px] text-muted ring-2 ring-night">
-                            +{people.length - 3}
-                          </span>
-                        ) : null}
-                      </span>
-                    ) : null}
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
+          <div className="flex flex-col gap-6">
+            {moments.map((moment) => (
+              <section key={moment.key}>
+                <div className="mb-2 flex items-baseline gap-2">
+                  <h2 className="font-mono text-[10px] tracking-[0.14em] text-signal uppercase">
+                    {moment.label}
+                  </h2>
+                  <span className="h-px flex-1 bg-border" />
+                  <span className="font-mono text-[10px] text-muted">
+                    {moment.photos.length}
+                  </span>
+                </div>
+                <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {moment.photos.map((photo) => {
+                    const people = cast.get(photo.id) ?? []
+                    const imIn = me ? people.some((a) => a.id === me.id) : false
+                    return (
+                      <li key={photo.id}>
+                        <button
+                          type="button"
+                          onClick={() => setOpenId(photo.id)}
+                          className={[
+                            'relative block aspect-square w-full overflow-hidden rounded-xl bg-surface',
+                            imIn ? 'ring-2 ring-signal' : '',
+                          ].join(' ')}
+                        >
+                          <Thumb photo={photo} />
+                          {people.length > 0 ? (
+                            <span className="absolute bottom-1.5 left-1.5 flex -space-x-2">
+                              {people.slice(0, 3).map((a) => (
+                                <span key={a.id} className="rounded-full ring-2 ring-night">
+                                  <Avatar name={a.name} color={a.avatar_color} size={22} />
+                                </span>
+                              ))}
+                              {people.length > 3 ? (
+                                <span className="flex h-[22px] items-center rounded-full bg-night/90 px-1.5 font-mono text-[10px] text-muted ring-2 ring-night">
+                                  +{people.length - 3}
+                                </span>
+                              ) : null}
+                            </span>
+                          ) : null}
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </section>
+            ))}
+          </div>
         )}
 
         {open ? (
@@ -193,6 +240,8 @@ export default function Gallery() {
             uploader={open.uploader_id ? (byId.get(open.uploader_id) ?? null) : null}
             allAttendees={attendees}
             allTags={tags}
+            onTagPerson={me ? (id) => void tagOther(open.id, id) : undefined}
+            tagBusy={busy}
             footer={
               <ClaimButton
                 claimed={me ? (cast.get(open.id) ?? []).some((a) => a.id === me.id) : false}

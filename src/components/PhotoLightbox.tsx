@@ -44,6 +44,8 @@ export default function PhotoLightbox({
   uploader,
   allAttendees,
   allTags,
+  onTagPerson,
+  tagBusy,
 }: {
   photo: Photo
   people: Attendee[]
@@ -58,9 +60,13 @@ export default function PhotoLightbox({
   /** Para el grafo embebido al tocar un nombre — con quien se relaciona esa persona. */
   allAttendees?: Attendee[]
   allTags?: PhotoTag[]
+  /** Taguear a alguien mas en esta foto. Si no se pasa, no se ofrece. */
+  onTagPerson?: (attendeeId: string) => void
+  tagBusy?: boolean
 }) {
   const [saving, setSaving] = useState(false)
   const [connectId, setConnectId] = useState<string | null>(null)
+  const [picking, setPicking] = useState(false)
 
   async function onDownload() {
     if (saving) return
@@ -158,6 +164,20 @@ export default function PhotoLightbox({
           allAttendees={allAttendees}
           allTags={allTags}
         />
+
+        {onTagPerson && allAttendees ? (
+          <TagPicker
+            candidates={allAttendees.filter((a) => !people.some((p) => p.id === a.id))}
+            open={picking}
+            busy={Boolean(tagBusy)}
+            onOpen={() => setPicking(true)}
+            onClose={() => setPicking(false)}
+            onPick={(id) => {
+              onTagPerson(id)
+              setPicking(false)
+            }}
+          />
+        ) : null}
         <PersonList
           title="Liked by"
           people={likedBy ?? []}
@@ -169,6 +189,74 @@ export default function PhotoLightbox({
 
         {footer}
       </div>
+    </div>
+  )
+}
+
+/**
+ * "Who else is in this?" — el que subio la foto ya sabe quien sale, y esperar
+ * a que cada uno se auto-tagee deja el grafo vacio. Lista simple de la gente
+ * del evento que todavia no esta tageada aca.
+ */
+function TagPicker({
+  candidates,
+  open,
+  busy,
+  onOpen,
+  onClose,
+  onPick,
+}: {
+  candidates: Attendee[]
+  open: boolean
+  busy: boolean
+  onOpen: () => void
+  onClose: () => void
+  onPick: (id: string) => void
+}) {
+  if (candidates.length === 0) return null
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={onOpen}
+        className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3.5 py-2.5 font-display text-[13px] font-medium text-muted transition-colors hover:border-signal hover:text-signal"
+      >
+        <span aria-hidden="true">+</span>
+        <span>Tag someone else in this</span>
+      </button>
+    )
+  }
+
+  return (
+    <div className="mt-3 rounded-lg border border-border bg-night p-3">
+      <div className="flex items-center justify-between pb-2">
+        <p className="font-mono text-[10px] tracking-[0.14em] text-muted uppercase">
+          Who else is in this?
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="font-mono text-[11px] text-muted"
+        >
+          Cancel
+        </button>
+      </div>
+      <ul className="flex max-h-52 flex-wrap gap-2 overflow-y-auto">
+        {candidates.map((a) => (
+          <li key={a.id}>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onPick(a.id)}
+              className="flex items-center gap-2 rounded-full bg-surface py-1 pr-3 pl-1 text-ink transition-opacity disabled:opacity-40"
+            >
+              <Avatar name={a.name} color={a.avatar_color} size={24} />
+              <span className="text-sm">{a.name}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
