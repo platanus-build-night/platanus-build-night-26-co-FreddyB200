@@ -82,18 +82,40 @@ export function timeOf(photo: Photo): string {
   })
 }
 
-/**
- * El momento compartido con alguien: la escena + la hora de una foto que
- * ambos comparten. NO inventa de que hablaron — solo afirma el momento real.
- */
-export function sharedMoment(overlap: Overlap, photos: Photo[]): string | null {
-  const shared = photos.filter((p) => overlap.photoIds.includes(p.id))
-  if (shared.length === 0) return null
+/** Rango horario (min/max) de una lista de fotos. null si no hay ninguna. */
+export function timeRange(photos: Photo[]): { start: Date; end: Date } | null {
+  if (photos.length === 0) return null
+  const times = photos.map((p) => new Date(p.taken_at ?? p.created_at).getTime())
+  return { start: new Date(Math.min(...times)), end: new Date(Math.max(...times)) }
+}
 
-  // Preferimos una que ya tenga descripcion de escena.
-  const best = shared.find((p) => p.scene_description) ?? shared[0]
-  const when = timeOf(best)
-  return best.scene_description
-    ? `${best.scene_description} — ${when}`
-    : `You overlapped at ${when}`
+function fmtTime(d: Date): string {
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+/** "14:20 – 18:05" — el rango horario de las fotos que dos personas comparten. */
+export function sharedRange(overlap: Overlap, photos: Photo[]): string | null {
+  const range = timeRange(photos.filter((p) => overlap.photoIds.includes(p.id)))
+  if (!range) return null
+  return range.start.getTime() === range.end.getTime()
+    ? fmtTime(range.start)
+    : `${fmtTime(range.start)} – ${fmtTime(range.end)}`
+}
+
+/**
+ * "9 hours" / "40 minutes" a partir de un rango horario — para el subtitulo
+ * del recap. NO inventa nada: es el span real entre tus fotos mas vieja y mas
+ * nueva. null si el span es demasiado corto para valer la pena mencionarlo.
+ */
+export function formatSpan(range: { start: Date; end: Date } | null): string | null {
+  if (!range) return null
+  const ms = range.end.getTime() - range.start.getTime()
+  if (ms < 60_000) return null
+  const hours = ms / 3_600_000
+  if (hours < 1) {
+    const minutes = Math.round(ms / 60_000)
+    return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`
+  }
+  const rounded = Math.round(hours)
+  return `${rounded} ${rounded === 1 ? 'hour' : 'hours'}`
 }

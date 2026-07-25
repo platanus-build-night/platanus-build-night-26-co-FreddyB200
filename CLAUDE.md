@@ -22,7 +22,7 @@ El grafo es el corazón. Construir en este orden estricto — cada capa debe fun
 
 1. **Onboarding + Colector** — QR → "Who are you?" (name, GitHub, LinkedIn opcional, "What are you building?") → identidad guardada. Subir fotos desde la cámara del cel.
 2. **Galería + auto-tag** — todos ven las fotos; cada quien se toca a sí mismo en las que sale ("That's me") → recupera sus fotos Y alimenta el grafo en el mismo gesto.
-3. **Grafo + Dossier** — por persona: con quién coincidió (aristas = fotos compartidas), la evidencia visual, y el mensaje de follow-up + link a GitHub. **Este es el clímax de la demo.**
+3. **Grafo + Dossier** — por persona: con quién coincidió (aristas = fotos compartidas), la evidencia visual, y el mensaje de follow-up + link a GitHub. **Este es el clímax de la demo.** El grafo se calcula igual (`src/lib/graph.ts`), pero desde que se importó el lenguaje visual canónico (sección 6) el Dossier se ve como un recap — hero + tira de fotos + riel de gente — en vez de una visualización de grafo en vivo; ver nota en sección 6.
 4. **UX/pulido** — aplicar los tokens de diseño (sección 6).
 
 ## 2. Lo que NO se construye esta noche (guardarraíles — no expandir scope)
@@ -110,6 +110,7 @@ create table attendees (
   name text not null,
   github text,
   linkedin text,
+  whatsapp text,              -- numero completo con codigo de pais, para wa.me/<numero>
   building text,              -- "What are you building?" — contexto dev, alimenta el dossier
   avatar_color text,          -- hex autogenerado del nombre
   device_token uuid unique default gen_random_uuid(),
@@ -140,33 +141,51 @@ create table photo_tags (
 **Dossier de un attendee X:**
 - Sus fotos = `photos` join `photo_tags where attendee_id = X`.
 - Sus coincidencias = otros attendees que comparten alguna foto con X, ordenados por peso.
-- Momento compartido con Y = `scene_description` + `taken_at` de las fotos que X e Y comparten. **NO inventar de qué hablaron** — solo afirmar el momento compartido real ("you overlapped at the whiteboard session, 2:14 AM"). El follow-up engancha en ese momento real.
+- Momento compartido con Y = las fotos que X e Y comparten (evidencia visual, tap para verla a pantalla completa con `scene_description` + `taken_at`) + el rango horario real (`sharedRange` en `graph.ts`). **NO inventar de qué hablaron** — solo afirmar el momento compartido real. El follow-up engancha en ese momento real.
+- Conexión: GitHub es el canal primario (siempre que la persona lo haya compartido); LinkedIn y WhatsApp (`wa.me/<numero>`) son botones-ícono secundarios, solo si esa persona los agregó en el onboarding.
 
 ### 5.1. Pasaporte cross-evento (ROADMAP — no construir hoy)
 El `event_id` en `attendees`/`photos` permite, mañana, la vista "tú y Andrés coincidieron en N eventos" (misma query del grafo, agrupando por evento en vez de por foto, uniendo identidades por `github` o `device_token`). Hoy hay un solo evento → mostrarlo daría "1 evento" y no impresiona. **Se vende en el pitch, no se construye.** Frase de cierre del pitch: *"Y esto es solo una noche. Overlap recuerda cada evento — ves con quién te sigues cruzando en la escena, hackathon tras hackathon."*
 
 ---
 
-## 6. Diseño — dirección anti-genérica (anclada en el sujeto)
+## 6. Diseño — lenguaje visual canónico ("film")
 
-**Concepto:** "la sala, renderizada como luz." La app es una galería oscura de trasnoche; las FOTOS son el color; el elemento firma es la **constelación de conexión** (personas = nodos/estrellas, fotos compartidas = aristas que brillan).
+> **Fuente de verdad de los tokens:** un proyecto de Claude Design (`Overlap Recap.dc.html`,
+> importado vía `claude_design` MCP) es el diseño canónico. Lo que sigue es lo que se extrajo
+> de ahí; si hay que tocar diseño de nuevo, ese archivo manda sobre esta descripción.
+
+**Concepto:** una galería oscura y cálida de trasnoche, tipo print de película — sin negro puro,
+sin neón, sombras mates. Las FOTOS son el color; todo lo demás es contención.
 
 **Evitar los 3 clichés de diseño AI:** (1) fondo crema + serif + acento terracota/coral ≈ #D97757, (2) negro puro + verde ácido/bermellón, (3) layout tipo periódico con líneas hairline. NO usar ninguno.
 
-**Paleta (segura para daltonismo — eje azul/amarillo, sin codificar estados en rojo/verde):**
-- Base: `#14132A` (índigo medianoche, no negro puro)
-- Superficie/cards: `#1E1C3A`
-- Texto principal: `#F5F3FF`
-- Texto tenue: `#9B97C4`
-- Acento conexión (aristas del grafo): periwinkle `#8B7CF0`
-- Señal (tu nodo, tus coincidencias, highlights): ámbar `#F5B942`
+**Paleta (`src/index.css`, tokens Tailwind v4 vía `@theme` — un único acento, sin codificar estados en rojo/verde):**
+- `--color-night` `#16151A` — fondo, casi negro pero cálido
+- `--color-surface` `#201E26` — cards, tiras de foto
+- `--color-border` `#2C2A33` — hairlines (reemplaza los `border-white/10` originales)
+- `--color-ink` `#EFEBE2` — texto principal, crema
+- `--color-muted` `#8A868F` — texto tenue
+- `--color-signal` `#C6A15B` — dorado, único acento: tu marca, CTAs, highlights
 
 **Tipografía:**
-- Display (héroe): **Space Grotesk**
-- Body: **Geist Sans**
-- Mono (para @handles de GitHub y timestamps): **Geist Mono** o **JetBrains Mono** — fiel al sujeto (cultura dev), parte de la firma.
+- Display (héroe, headings, botones): **Space Grotesk**, peso 500 (medium) — nunca bold/700, es parte de la voz tranquila del sistema.
+- Body: **Geist**
+- Mono (@handles de GitHub, timestamps, eyebrows uppercase): **JetBrains Mono**
 
-**Elemento firma (la única cosa audaz):** la constelación en vivo — nodos = attendees (chips de iniciales), aristas = líneas periwinkle con brillo, grosor por # de fotos compartidas, TU nodo en ámbar. Se dibuja/anima al cargar el dossier (un solo momento orquestado; respetar `prefers-reduced-motion`). Todo lo demás quieto.
+**Avatares:** chip de iniciales sobre color autogenerado (`src/lib/avatar.ts`) — paleta desaturada "film" (dorado, terracota, salvia, lavanda apagada, pizarra, rosa polvo, taupe, menta apagada), nunca tonos saturados/neón.
+
+**Elemento firma — el Dossier como recap, no como grafo:** el grafo sigue siendo la fuente de
+datos (`src/lib/graph.ts`, aristas = fotos compartidas), pero ya NO se dibuja como constelación
+SVG. El Dossier es un recap: hero con tu conteo real de fotos, una tira horizontal de tus fotos
+(scroll-snap, ligera inclinación alternada, fan por foto — imita un stack de prints físicos), y
+UNA sola sección "Who you overlapped with" donde el riel de caras es el índice y tocar una cara
+expande su card inline (nombre, @github, "what they're building", fotos compartidas, conectar).
+Se anima una sola vez al cargar (`ov-rise`/`ov-fade` en `index.css`; respeta `prefers-reduced-motion`).
+
+**Chrome compartido:** `TopBar` (marca + nombre del evento + reloj en vivo) arriba de cada
+pantalla; `PhotoLightbox` es el visor de foto a pantalla completa (hora + escena + quién está
+tageado), compartido entre Gallery y Dossier.
 
 **Copy (INGLÉS, voz de interfaz):** verbos activos, sentence case, sin relleno. "That's me" no "Tag". "Save my photos" no "Submit". Empty state que invita: "No photos yet — be the first to add one."
 

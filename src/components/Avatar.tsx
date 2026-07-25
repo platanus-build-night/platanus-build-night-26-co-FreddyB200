@@ -12,7 +12,7 @@ export default function Avatar({ name, color, size = 40 }: Props) {
   return (
     <span
       aria-hidden="true"
-      className="inline-flex shrink-0 items-center justify-center rounded-full font-display font-bold"
+      className="inline-flex shrink-0 items-center justify-center rounded-full font-display font-medium"
       style={{
         width: size,
         height: size,

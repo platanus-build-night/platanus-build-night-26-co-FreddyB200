@@ -4,6 +4,7 @@ import { useIdentity } from '../lib/identity'
 import { listPhotos, uploadPhoto } from '../lib/db'
 import { photoUrl } from '../lib/supabase'
 import Avatar from '../components/Avatar'
+import TopBar from '../components/TopBar'
 import type { Photo } from '../lib/types'
 
 type Pending = {
@@ -79,86 +80,89 @@ export default function Capture() {
   const isEmpty = !loading && photos.length === 0 && pending.length === 0
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-5 pb-48">
-      <header className="flex items-center gap-3 py-6">
-        {me ? <Avatar name={me.name} color={me.avatar_color} size={44} /> : null}
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-display text-lg font-bold text-ink">{me?.name}</p>
-          <p className="truncate font-mono text-xs text-muted">
-            {me?.github ? `@${me.github}` : (event?.name ?? '')}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={signOut}
-          className="rounded-lg px-2 py-1 text-xs text-muted transition-colors hover:text-ink"
-        >
-          Not you?
-        </button>
-      </header>
-
-      <h1 className="font-display text-3xl leading-tight font-bold text-ink">
-        Drop tonight&rsquo;s photos in
-      </h1>
-      <p className="mt-2 text-sm text-muted">
-        Everyone&rsquo;s photos land in one pool. You&rsquo;ll pick yourself out of them next.
-      </p>
-
-      {isEmpty ? (
-        <p className="mt-10 rounded-2xl border border-dashed border-border px-5 py-10 text-center text-sm text-muted">
-          No photos yet — be the first to add one.
-        </p>
-      ) : (
-        <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {pending.map((p) => (
-            <li
-              key={p.key}
-              className="relative aspect-square overflow-hidden rounded-xl bg-surface"
-            >
-              <img
-                src={p.previewUrl}
-                alt=""
-                className={`h-full w-full object-cover ${p.status === 'failed' ? 'opacity-30' : 'opacity-50'}`}
-              />
-              <span className="absolute inset-x-0 bottom-0 bg-night/80 px-2 py-1.5 text-center font-mono text-[10px] text-muted">
-                {p.status === 'failed' ? (p.error ?? 'Failed') : 'Uploading…'}
-              </span>
-            </li>
-          ))}
-          {photos.map((photo) => (
-            <li key={photo.id} className="aspect-square overflow-hidden rounded-xl bg-surface">
-              <img
-                src={photoUrl(photo.storage_path)}
-                alt={photo.scene_description ?? ''}
-                loading="lazy"
-                className="h-full w-full object-cover"
-              />
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* Barra de accion fija, justo encima de la nav: en el cel es el unico
-          boton que importa. */}
-      <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-10 border-t border-border bg-night/95 backdrop-blur">
-        <div className="mx-auto w-full max-w-2xl px-5 py-4">
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={onFiles}
-            className="hidden"
-          />
+    <>
+      <TopBar />
+      <main className="mx-auto w-full max-w-2xl px-5 pb-48">
+        <header className="flex items-center gap-3 py-6">
+          {me ? <Avatar name={me.name} color={me.avatar_color} size={44} /> : null}
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-display text-lg font-medium text-ink">{me?.name}</p>
+            <p className="truncate font-mono text-xs text-muted">
+              {me?.github ? `@${me.github}` : (event?.name ?? '')}
+            </p>
+          </div>
           <button
             type="button"
-            onClick={() => inputRef.current?.click()}
-            className="w-full rounded-xl bg-signal px-5 py-4 font-display text-base font-bold text-night"
+            onClick={signOut}
+            className="rounded-lg px-2 py-1 text-xs text-muted transition-colors hover:text-ink"
           >
-            Add photos
+            Not you?
           </button>
+        </header>
+
+        <h1 className="font-display text-3xl leading-tight font-medium text-ink">
+          Drop tonight&rsquo;s photos in
+        </h1>
+        <p className="mt-2 text-sm text-muted">
+          Everyone&rsquo;s photos land in one pool. You&rsquo;ll pick yourself out of them next.
+        </p>
+  
+        {isEmpty ? (
+          <p className="mt-10 rounded-2xl border border-dashed border-border px-5 py-10 text-center text-sm text-muted">
+            No photos yet — be the first to add one.
+          </p>
+        ) : (
+          <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {pending.map((p) => (
+              <li
+                key={p.key}
+                className="relative aspect-square overflow-hidden rounded-xl bg-surface"
+              >
+                <img
+                  src={p.previewUrl}
+                  alt=""
+                  className={`h-full w-full object-cover ${p.status === 'failed' ? 'opacity-30' : 'opacity-50'}`}
+                />
+                <span className="absolute inset-x-0 bottom-0 bg-night/80 px-2 py-1.5 text-center font-mono text-[10px] text-muted">
+                  {p.status === 'failed' ? (p.error ?? 'Failed') : 'Uploading…'}
+                </span>
+              </li>
+            ))}
+            {photos.map((photo) => (
+              <li key={photo.id} className="aspect-square overflow-hidden rounded-xl bg-surface">
+                <img
+                  src={photoUrl(photo.storage_path)}
+                  alt={photo.scene_description ?? ''}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* Barra de accion fija, justo encima de la nav: en el cel es el unico
+            boton que importa. */}
+        <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-10 border-t border-border bg-night/95 backdrop-blur">
+          <div className="mx-auto w-full max-w-2xl px-5 py-4">
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={onFiles}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="w-full rounded-xl bg-signal px-5 py-4 font-display text-base font-medium text-night"
+            >
+              Add photos
+            </button>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </>
   )
 }

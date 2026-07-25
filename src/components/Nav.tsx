@@ -16,7 +16,7 @@ export default function Nav() {
               to={tab.to}
               className={({ isActive }) =>
                 [
-                  'block py-4 text-center font-display text-sm font-bold transition-colors',
+                  'block py-4 text-center font-display text-sm font-medium transition-colors',
                   isActive ? 'text-signal' : 'text-muted',
                 ].join(' ')
               }
