@@ -3,7 +3,7 @@ import { useIdentity } from '../lib/identity'
 import { useEventData } from '../lib/useEventData'
 import { formatSpan, overlapsFor, photosFor, sharedRange, timeOf, timeRange } from '../lib/graph'
 import { photoUrl } from '../lib/supabase'
-import { myPhotosZipUrl } from '../lib/db'
+import { likePhoto, myPhotosZipUrl, unlikePhoto } from '../lib/db'
 import Avatar from '../components/Avatar'
 import TopBar from '../components/TopBar'
 import PhotoLightbox from '../components/PhotoLightbox'
@@ -17,8 +17,9 @@ const STRIP_OVERLAP = 44
 /** El climax de la demo: el recap de esta noche. Data, no LLM. */
 export default function Dossier() {
   const { event, me } = useIdentity()
-  const { photos, attendees, tags, loading } = useEventData(event?.id)
+  const { photos, attendees, tags, likes, loading, refresh } = useEventData(event?.id)
   const [openPhotoId, setOpenPhotoId] = useState<string | null>(null)
+  const [likeBusy, setLikeBusy] = useState(false)
 
   const byId = useMemo(
     () => new Map<string, Attendee>(attendees.map((a) => [a.id, a])),
@@ -55,6 +56,32 @@ export default function Dossier() {
     return map
   }, [tags, byId])
 
+  /** photo_id -> attendees que le dieron like. */
+  const likers = useMemo(() => {
+    const map = new Map<string, Attendee[]>()
+    for (const like of likes) {
+      const person = byId.get(like.attendee_id)
+      if (!person) continue
+      const list = map.get(like.photo_id)
+      if (list) list.push(person)
+      else map.set(like.photo_id, [person])
+    }
+    return map
+  }, [likes, byId])
+
+  async function toggleLike(photo: Photo) {
+    if (!me || likeBusy) return
+    const likedIt = (likers.get(photo.id) ?? []).some((a) => a.id === me.id)
+    setLikeBusy(true)
+    try {
+      if (likedIt) await unlikePhoto(photo.id, me.id)
+      else await likePhoto(photo.id, me.id)
+      await refresh()
+    } finally {
+      setLikeBusy(false)
+    }
+  }
+
   if (!me) return null
 
   const openPhoto = photos.find((p) => p.id === openPhotoId) ?? null
@@ -87,6 +114,11 @@ export default function Dossier() {
           photo={openPhoto}
           people={cast.get(openPhoto.id) ?? []}
           onClose={() => setOpenPhotoId(null)}
+          likedBy={likers.get(openPhoto.id) ?? []}
+          liked={(likers.get(openPhoto.id) ?? []).some((a) => a.id === me.id)}
+          likeBusy={likeBusy}
+          onToggleLike={() => void toggleLike(openPhoto)}
+          uploader={openPhoto.uploader_id ? (byId.get(openPhoto.uploader_id) ?? null) : null}
         />
       ) : null}
     </>

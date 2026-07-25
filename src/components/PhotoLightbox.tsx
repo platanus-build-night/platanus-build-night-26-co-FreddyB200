@@ -39,6 +39,7 @@ export default function PhotoLightbox({
   liked,
   onToggleLike,
   likeBusy,
+  uploader,
 }: {
   photo: Photo
   people: Attendee[]
@@ -49,6 +50,7 @@ export default function PhotoLightbox({
   liked?: boolean
   onToggleLike?: () => void
   likeBusy?: boolean
+  uploader?: Attendee | null
 }) {
   const [saving, setSaving] = useState(false)
   const [connectId, setConnectId] = useState<string | null>(null)
@@ -129,7 +131,10 @@ export default function PhotoLightbox({
         {photo.scene_description ? (
           <p className="mt-4 text-sm text-muted">{photo.scene_description}</p>
         ) : null}
-        <p className="mt-1 font-mono text-xs text-muted/70">{timeOf(photo)}</p>
+        <p className="mt-1 font-mono text-xs text-muted/70">
+          {timeOf(photo)}
+          {uploader ? <> · Uploaded by {uploader.name}</> : null}
+        </p>
 
         <PersonList people={people} selectedId={connectId} onSelect={toggleConnect} />
         <PersonList title="Liked by" people={likedBy ?? []} selectedId={connectId} onSelect={toggleConnect} />

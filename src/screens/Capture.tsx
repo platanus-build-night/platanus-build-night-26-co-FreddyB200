@@ -26,11 +26,12 @@ export default function Capture() {
   const refresh = useCallback(async () => {
     if (!event) return
     try {
-      setPhotos(await listPhotos(event.id))
+      const all = await listPhotos(event.id)
+      setPhotos(me ? all.filter((p) => p.uploader_id === me.id) : [])
     } finally {
       setLoading(false)
     }
-  }, [event])
+  }, [event, me])
 
   useEffect(() => {
     void refresh()
@@ -104,12 +105,13 @@ export default function Capture() {
           Drop tonight&rsquo;s photos in
         </h1>
         <p className="mt-2 text-sm text-muted">
-          Everyone&rsquo;s photos land in one pool. You&rsquo;ll pick yourself out of them next.
+          Your uploads land in the shared pool with everyone else&rsquo;s — head to Gallery to see
+          them all and tag yourself.
         </p>
-  
+
         {isEmpty ? (
           <p className="mt-10 rounded-2xl border border-dashed border-border px-5 py-10 text-center text-sm text-muted">
-            No photos yet — be the first to add one.
+            You haven&rsquo;t added any yet — tap below to drop your first.
           </p>
         ) : (
           <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">

@@ -8,10 +8,25 @@ import type { OnboardInput } from '../lib/types'
 
 const EMPTY: OnboardInput = { name: '', github: '', linkedin: '', whatsapp: '', building: '' }
 
+/** Colombia primero: es el default mas probable para este evento, pero mucha
+ * gente asume +57 sin decirlo — el selector lo hace explicito en vez de
+ * depender de que cada quien lo escriba bien en texto libre. */
+const WHATSAPP_COUNTRIES = [
+  { code: '57', flag: '🇨🇴', label: 'CO +57' },
+  { code: '1', flag: '🇺🇸', label: 'US/CA +1' },
+  { code: '52', flag: '🇲🇽', label: 'MX +52' },
+  { code: '54', flag: '🇦🇷', label: 'AR +54' },
+  { code: '55', flag: '🇧🇷', label: 'BR +55' },
+  { code: '56', flag: '🇨🇱', label: 'CL +56' },
+  { code: '51', flag: '🇵🇪', label: 'PE +51' },
+  { code: '34', flag: '🇪🇸', label: 'ES +34' },
+]
+
 export default function Onboard() {
   const { register } = useIdentity()
   const navigate = useNavigate()
   const [form, setForm] = useState<OnboardInput>(EMPTY)
+  const [whatsappCountry, setWhatsappCountry] = useState(WHATSAPP_COUNTRIES[0].code)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -25,7 +40,8 @@ export default function Onboard() {
     setSaving(true)
     setError(null)
     try {
-      await register(form)
+      const whatsapp = form.whatsapp.trim() ? `${whatsappCountry}${form.whatsapp.trim()}` : ''
+      await register({ ...form, whatsapp })
       navigate('/add', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
@@ -79,16 +95,36 @@ export default function Onboard() {
             autoCorrect="off"
             mono
           />
-          <Field
-            label="WhatsApp"
-            type="tel"
-            value={form.whatsapp}
-            onChange={set('whatsapp')}
-            placeholder="+1 555 123 4567"
-            hint="Optional. Only shown to people you overlap with."
-            autoComplete="tel"
-            mono
-          />
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-ink">WhatsApp</span>
+            <div className="flex gap-2">
+              <select
+                value={whatsappCountry}
+                onChange={(e) => setWhatsappCountry(e.target.value)}
+                aria-label="Country code"
+                className="rounded-xl border border-border bg-surface px-2.5 py-3 font-mono text-sm text-ink outline-none transition-colors focus:border-signal focus:ring-2 focus:ring-signal/30"
+              >
+                {WHATSAPP_COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.flag} +{c.code}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={form.whatsapp}
+                onChange={set('whatsapp')}
+                placeholder="300 123 4567"
+                autoComplete="tel-national"
+                className="w-full min-w-0 flex-1 rounded-xl border border-border bg-surface px-4 py-3 font-mono text-ink placeholder:text-muted/60 outline-none transition-colors focus:border-signal focus:ring-2 focus:ring-signal/30"
+              />
+            </div>
+            <span className="mt-1.5 block text-xs text-muted">
+              Optional. Pick your country — just the local number after that, no need to type the
+              prefix yourself.
+            </span>
+          </label>
           <Field
             label="What are you building?"
             value={form.building}
