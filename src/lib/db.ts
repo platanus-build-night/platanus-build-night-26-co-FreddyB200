@@ -58,6 +58,15 @@ export function whatsappUrl(whatsapp: string): string {
   return `https://wa.me/${whatsapp}`
 }
 
+/**
+ * URL del ZIP con todas las fotos donde sale este attendee.
+ * Se usa como href de un <a download>, no con fetch: dejamos que el navegador
+ * maneje la descarga (en movil es lo unico que funciona confiablemente).
+ */
+export function myPhotosZipUrl(attendeeId: string): string {
+  return `/api/download?attendee=${encodeURIComponent(attendeeId)}`
+}
+
 export async function registerAttendee(
   eventId: string,
   input: OnboardInput,
