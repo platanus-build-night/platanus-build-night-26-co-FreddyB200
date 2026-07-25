@@ -56,6 +56,9 @@ export default function Onboard() {
             required
             autoFocus
           />
+          <p className="-mb-1 font-mono text-[10px] tracking-[0.14em] text-muted uppercase">
+            Optional — so people can connect with you
+          </p>
           <Field
             label="GitHub"
             value={form.github}
