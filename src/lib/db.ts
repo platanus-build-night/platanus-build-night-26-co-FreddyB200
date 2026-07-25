@@ -1,6 +1,7 @@
 import { supabase, PHOTOS_BUCKET, photoUrl } from './supabase'
 import { avatarColor } from './avatar'
 import { preparePhoto } from './image'
+import { extensionFor, isVideoFile, isVideoPath } from './media'
 import type { Attendee, Event, OnboardInput, Photo, PhotoLike, PhotoTag } from './types'
 
 /** Slug del evento de esta noche. Es lo que apunta el QR. */
@@ -94,6 +95,11 @@ export function whatsappUrl(whatsapp: string): string {
  */
 export function myPhotosZipUrl(attendeeId: string): string {
   return `/api/download?attendee=${encodeURIComponent(attendeeId)}`
+}
+
+/** Igual que myPhotosZipUrl pero con las fotos a las que les diste like. */
+export function myLikesZipUrl(attendeeId: string): string {
+  return `/api/download?attendee=${encodeURIComponent(attendeeId)}&kind=likes`
 }
 
 export async function registerAttendee(
@@ -228,6 +234,8 @@ export async function listPhotos(eventId: string): Promise<Photo[]> {
  * Best-effort: si falla, la foto ya esta en el pozo igual. No bloquea la subida.
  */
 export async function describePhoto(photo: Photo): Promise<void> {
+  // Claude vision recibe imagenes, no mp4: para video ni lo intentamos.
+  if (isVideoPath(photo.storage_path)) return
   try {
     const res = await fetch('/api/analyze', {
       method: 'POST',
@@ -245,14 +253,29 @@ export async function describePhoto(photo: Photo): Promise<void> {
   }
 }
 
+/** Un video de celular puede pesar cientos de MB; en el wifi de un evento eso
+ * no termina nunca y ademas llena el bucket. Cortamos antes de intentarlo. */
+const MAX_VIDEO_BYTES = 60 * 1024 * 1024
+
 export async function uploadPhoto(
   eventId: string,
   uploaderId: string,
   file: File,
 ): Promise<Photo> {
-  const { blob, takenAt } = await preparePhoto(file)
+  const video = isVideoFile(file)
 
-  const path = `${eventId}/${crypto.randomUUID()}.jpg`
+  if (video && file.size > MAX_VIDEO_BYTES) {
+    throw new Error(`Video too big (max ${Math.round(MAX_VIDEO_BYTES / 1024 / 1024)}MB)`)
+  }
+
+  // El video se sube tal cual: preparePhoto lo pasaria por un canvas y saldria
+  // un JPEG del primer frame. La extension real es lo que despues distingue
+  // foto de video al renderizar (ver lib/media.ts).
+  const { blob, takenAt } = video
+    ? { blob: file as Blob, takenAt: null }
+    : await preparePhoto(file)
+
+  const path = `${eventId}/${crypto.randomUUID()}.${video ? extensionFor(file) : 'jpg'}`
   const { error: uploadError } = await supabase.storage
     .from(PHOTOS_BUCKET)
     .upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false })

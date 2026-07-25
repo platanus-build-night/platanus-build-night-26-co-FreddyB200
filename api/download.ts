@@ -5,8 +5,9 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { ZipWriter } from './_zip.js'
 
 /**
- * GET /api/download?attendee=<uuid>
- * -> ZIP con todas las fotos en las que esa persona esta etiquetada.
+ * GET /api/download?attendee=<uuid>[&kind=tags|likes]
+ * -> ZIP con las fotos donde esa persona esta etiquetada (kind=tags, default)
+ *    o las que le gustaron (kind=likes).
  *
  * Es "Download all my photos" sin OAuth ni Google: la promesa del pozo
  * ("subes las tuyas, recibes las tuyas") cerrada de la forma mas simple.
@@ -35,11 +36,14 @@ function pad(n: number): string {
   return String(n).padStart(2, '0')
 }
 
-/** overlap-0214-a1b2c3d4.jpg — hora real primero, para que ordene cronologico. */
+/** overlap-0214-a1b2c3d4.jpg — hora real primero, para que ordene cronologico.
+ * La extension sale del storage_path (no siempre es jpg: tambien hay video). */
 function fileNameFor(photo: PhotoRow): string {
   const when = new Date(photo.taken_at ?? photo.created_at)
   const stamp = `${pad(when.getMonth() + 1)}${pad(when.getDate())}-${pad(when.getHours())}${pad(when.getMinutes())}`
-  return `overlap-${stamp}-${photo.id.slice(0, 8)}.jpg`
+  const ext = photo.storage_path.split('.').pop()?.toLowerCase() || 'jpg'
+  const safeExt = /^[a-z0-9]{1,5}$/.test(ext) ? ext : 'jpg'
+  return `overlap-${stamp}-${photo.id.slice(0, 8)}.${safeExt}`
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -69,10 +73,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Falta ?attendee=<uuid>' })
   }
 
+  const kindParam = Array.isArray(req.query.kind) ? req.query.kind[0] : req.query.kind
+  const likesMode = kindParam === 'likes'
+  // Misma forma de fila en las dos tablas, asi que el resto del handler no cambia.
+  const table = likesMode ? 'photo_likes' : 'photo_tags'
+
   try {
-    // Las fotos donde esta etiquetado, via photo_tags.
     const rows = await fetchJson<{ photos: PhotoRow | null }[]>(
-      `${SUPABASE_URL}/rest/v1/photo_tags` +
+      `${SUPABASE_URL}/rest/v1/${table}` +
         `?select=photos(id,storage_path,taken_at,created_at)` +
         `&attendee_id=eq.${attendeeId}`,
     )
@@ -88,11 +96,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .slice(0, MAX_PHOTOS)
 
     if (photos.length === 0) {
-      return res.status(404).json({ error: "You're not tagged in any photos yet" })
+      return res.status(404).json({
+        error: likesMode ? "You haven't liked any photos yet" : "You're not tagged in any photos yet",
+      })
     }
 
     res.setHeader('Content-Type', 'application/zip')
-    res.setHeader('Content-Disposition', 'attachment; filename="overlap-photos.zip"')
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${likesMode ? 'overlap-liked' : 'overlap-photos'}.zip"`,
+    )
     res.setHeader('Cache-Control', 'no-store')
 
     const zip = new ZipWriter((chunk) => {

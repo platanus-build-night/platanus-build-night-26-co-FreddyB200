@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { useIdentity } from '../lib/identity'
 import { listPhotos, uploadPhoto } from '../lib/db'
-import { photoUrl } from '../lib/supabase'
 import Avatar from '../components/Avatar'
+import Thumb from '../components/Thumb'
 import TopBar from '../components/TopBar'
 import type { Photo } from '../lib/types'
 
@@ -105,8 +105,8 @@ export default function Capture() {
           Drop tonight&rsquo;s photos in
         </h1>
         <p className="mt-2 text-sm text-muted">
-          Your uploads land in the shared pool with everyone else&rsquo;s — head to Gallery to see
-          them all and tag yourself.
+          Photos and short videos both work. Your uploads land in the shared pool with everyone
+          else&rsquo;s — head to Gallery to see them all and tag yourself.
         </p>
 
         {isEmpty ? (
@@ -132,12 +132,7 @@ export default function Capture() {
             ))}
             {photos.map((photo) => (
               <li key={photo.id} className="aspect-square overflow-hidden rounded-xl bg-surface">
-                <img
-                  src={photoUrl(photo.storage_path)}
-                  alt={photo.scene_description ?? ''}
-                  loading="lazy"
-                  className="h-full w-full object-cover"
-                />
+                <Thumb photo={photo} />
               </li>
             ))}
           </ul>
@@ -150,7 +145,7 @@ export default function Capture() {
             <input
               ref={inputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,video/*"
               multiple
               onChange={onFiles}
               className="hidden"
@@ -160,7 +155,7 @@ export default function Capture() {
               onClick={() => inputRef.current?.click()}
               className="w-full rounded-xl bg-signal px-5 py-4 font-display text-base font-medium text-night"
             >
-              Add photos
+              Add photos or video
             </button>
           </div>
         </div>

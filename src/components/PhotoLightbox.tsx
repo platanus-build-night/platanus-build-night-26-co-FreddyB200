@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { photoUrl } from '../lib/supabase'
+import { isVideoPath } from '../lib/media'
 import { timeOf } from '../lib/graph'
 import Avatar from './Avatar'
 import ConnectRow from './ConnectRow'
@@ -95,11 +96,22 @@ export default function PhotoLightbox({
       </div>
 
       <div className="flex min-h-0 flex-1 items-center justify-center px-4">
-        <img
-          src={photoUrl(photo.storage_path)}
-          alt={photo.scene_description ?? ''}
-          className="max-h-full max-w-full rounded-sm object-contain"
-        />
+        {isVideoPath(photo.storage_path) ? (
+          <video
+            src={photoUrl(photo.storage_path)}
+            className="max-h-full max-w-full rounded-sm object-contain"
+            controls
+            autoPlay
+            playsInline
+            loop
+          />
+        ) : (
+          <img
+            src={photoUrl(photo.storage_path)}
+            alt={photo.scene_description ?? ''}
+            className="max-h-full max-w-full rounded-sm object-contain"
+          />
+        )}
       </div>
 
       <div className="mx-auto w-full max-w-2xl px-5 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">

@@ -3,7 +3,7 @@ import { useIdentity } from '../lib/identity'
 import { useEventData } from '../lib/useEventData'
 import { formatSpan, overlapsFor, photosFor, sharedRange, timeOf, timeRange } from '../lib/graph'
 import { photoUrl } from '../lib/supabase'
-import { likePhoto, myPhotosZipUrl, unlikePhoto } from '../lib/db'
+import { likePhoto, myLikesZipUrl, myPhotosZipUrl, unlikePhoto } from '../lib/db'
 import Avatar from '../components/Avatar'
 import TopBar from '../components/TopBar'
 import PhotoLightbox from '../components/PhotoLightbox'
@@ -57,6 +57,13 @@ export default function Dossier() {
     return map
   }, [tags, byId])
 
+  /** Las fotos a las que YO les di like, mas nuevas primero. */
+  const myLikedPhotos = useMemo(() => {
+    if (!me) return []
+    const mine = new Set(likes.filter((l) => l.attendee_id === me.id).map((l) => l.photo_id))
+    return photos.filter((p) => mine.has(p.id))
+  }, [me, likes, photos])
+
   /** photo_id -> attendees que le dieron like. */
   const likers = useMemo(() => {
     const map = new Map<string, Attendee[]>()
@@ -93,20 +100,35 @@ export default function Dossier() {
       <main className="mx-auto w-full max-w-2xl pb-28">
         {loading && tags.length === 0 ? (
           <p className="py-16 text-center font-mono text-sm text-muted">Loading…</p>
-        ) : myPhotos.length === 0 ? (
-          <EmptyRecap />
         ) : (
           <>
-            <Hero photos={myPhotos} overlapCount={overlaps.length} />
-            <PhotoStrip photos={chronological} onOpen={setOpenPhotoId} />
-            <SaveButton attendeeId={me.id} />
-            <EventGraph attendees={attendees} tags={tags} meId={me.id} />
-            {overlaps.length > 0 ? (
-              <PeopleSection overlaps={overlaps} photos={photos} onOpenPhoto={setOpenPhotoId} />
+            {myPhotos.length === 0 ? (
+              <EmptyRecap />
             ) : (
-              <NoOverlapsYet />
+              <>
+                <Hero photos={myPhotos} overlapCount={overlaps.length} />
+                <PhotoStrip photos={chronological} onOpen={setOpenPhotoId} />
+                <SaveButton attendeeId={me.id} />
+                <EventGraph attendees={attendees} tags={tags} meId={me.id} />
+                {overlaps.length > 0 ? (
+                  <PeopleSection overlaps={overlaps} photos={photos} onOpenPhoto={setOpenPhotoId} />
+                ) : (
+                  <NoOverlapsYet />
+                )}
+              </>
             )}
-            <Footer mine={myPhotos.length} total={photos.length} />
+
+            {/* Aparte del tageo: se puede llegar aca sin salir en ninguna foto
+                pero habiendo likeado varias, y esas tambien son "tuyas". */}
+            <LikedSection
+              photos={myLikedPhotos}
+              attendeeId={me.id}
+              onOpen={setOpenPhotoId}
+            />
+
+            {myPhotos.length > 0 ? (
+              <Footer mine={myPhotos.length} total={photos.length} />
+            ) : null}
           </>
         )}
       </main>
@@ -236,6 +258,66 @@ function SaveButton({ attendeeId }: { attendeeId: string }) {
         <span className="font-mono text-[11px] opacity-60">↓</span>
       </a>
     </div>
+  )
+}
+
+/**
+ * Las fotos que te gustaron — independiente de si sales en ellas. Es la otra
+ * mitad de "lo mio": el pozo tiene fotos buenas donde no sale nadie tageable
+ * (la sala, el whiteboard, la comida) y esas tambien te las queres llevar.
+ */
+function LikedSection({
+  photos,
+  attendeeId,
+  onOpen,
+}: {
+  photos: Photo[]
+  attendeeId: string
+  onOpen: (id: string) => void
+}) {
+  if (photos.length === 0) return null
+
+  return (
+    <section className="mt-9 border-t border-border pt-7">
+      <div className="px-5">
+        <h2 className="font-display text-[21px] font-medium tracking-[-0.02em] text-ink">
+          Photos you liked
+        </h2>
+        <p className="mt-1.5 font-mono text-[10px] tracking-[0.14em] text-muted uppercase">
+          {photos.length} saved · yours to keep
+        </p>
+      </div>
+
+      <ul className="mt-4 grid grid-cols-3 gap-2 px-5">
+        {photos.map((p) => (
+          <li key={p.id}>
+            <button
+              type="button"
+              onClick={() => onOpen(p.id)}
+              className="block aspect-square w-full overflow-hidden rounded-sm border border-border bg-surface"
+            >
+              <img
+                src={photoUrl(p.storage_path)}
+                alt={p.scene_description ?? ''}
+                loading="lazy"
+                className="h-full w-full object-cover"
+              />
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-3 px-5">
+        <a
+          href={myLikesZipUrl(attendeeId)}
+          download
+          className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border bg-night px-3.5 py-2.5 font-display text-[13px] font-medium text-ink transition-colors hover:border-signal hover:text-signal"
+        >
+          <span>Save the ones I liked</span>
+          <span className="font-mono text-[11px] opacity-60">↓</span>
+        </a>
+      </div>
+    </section>
   )
 }
 

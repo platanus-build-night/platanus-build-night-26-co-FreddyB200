@@ -2,9 +2,9 @@ import { useMemo, useState } from 'react'
 import { useIdentity } from '../lib/identity'
 import { useEventData } from '../lib/useEventData'
 import { likePhoto, tagSelf, unlikePhoto, untagSelf } from '../lib/db'
-import { photoUrl } from '../lib/supabase'
 import Avatar from '../components/Avatar'
 import PhotoLightbox from '../components/PhotoLightbox'
+import Thumb from '../components/Thumb'
 import TopBar from '../components/TopBar'
 import type { Attendee, Photo } from '../lib/types'
 
@@ -115,12 +115,7 @@ export default function Gallery() {
                       imIn ? 'ring-2 ring-signal' : '',
                     ].join(' ')}
                   >
-                    <img
-                      src={photoUrl(photo.storage_path)}
-                      alt={photo.scene_description ?? ''}
-                      loading="lazy"
-                      className="h-full w-full object-cover"
-                    />
+                    <Thumb photo={photo} />
                     {people.length > 0 ? (
                       <span className="absolute bottom-1.5 left-1.5 flex -space-x-2">
                         {people.slice(0, 3).map((a) => (
