@@ -157,6 +157,8 @@ export default function EventGraph({
             const pa = positions.get(e.a)
             const pb = positions.get(e.b)
             if (!pa || !pb) return null
+            const touchesSelected = revealId !== null && (e.a === revealId || e.b === revealId)
+            const dimmed = revealId !== null && !touchesSelected
             return (
               <line
                 key={`${e.a}|${e.b}`}
@@ -165,8 +167,10 @@ export default function EventGraph({
                 x2={pb.x}
                 y2={pb.y}
                 stroke="var(--color-signal)"
-                strokeWidth={0.75 + (e.weight / maxWeight) * 2.5}
-                opacity={0.16 + (e.weight / maxWeight) * 0.34}
+                strokeWidth={
+                  touchesSelected ? 2 + (e.weight / maxWeight) * 2.5 : 0.75 + (e.weight / maxWeight) * 2.5
+                }
+                opacity={dimmed ? 0.07 : touchesSelected ? 0.75 : 0.16 + (e.weight / maxWeight) * 0.34}
                 strokeLinecap="round"
               />
             )
@@ -178,28 +182,30 @@ export default function EventGraph({
           const person = byId.get(id)
           if (!pos || !person) return null
           const isMe = id === meId
-          const r = isMe ? 20 : 15
+          const isSelected = id === revealId
+          const r = isMe || isSelected ? 20 : 15
+          const dimmed = revealId !== null && !isSelected && !isMe
 
           return (
             <g
               key={id}
               onClick={() => setRevealId((cur) => (cur === id ? null : id))}
-              style={{ cursor: 'pointer' }}
+              style={{ cursor: 'pointer', opacity: dimmed ? 0.35 : 1 }}
             >
               <circle
                 cx={pos.x}
                 cy={pos.y}
                 r={r}
                 fill={person.avatar_color ?? 'var(--color-muted)'}
-                stroke={isMe ? 'var(--color-signal)' : 'var(--color-night)'}
-                strokeWidth={isMe ? 2.5 : 1.5}
+                stroke={isMe || isSelected ? 'var(--color-signal)' : 'var(--color-night)'}
+                strokeWidth={isMe || isSelected ? 2.5 : 1.5}
               />
               <text
                 x={pos.x}
                 y={pos.y}
                 textAnchor="middle"
                 dominantBaseline="central"
-                fontSize={isMe ? 12 : 10}
+                fontSize={isMe || isSelected ? 12 : 10}
                 fontWeight="600"
                 fill="var(--color-night)"
                 fontFamily="'Space Grotesk', sans-serif"
