@@ -8,6 +8,7 @@ import Avatar from '../components/Avatar'
 import TopBar from '../components/TopBar'
 import PhotoLightbox from '../components/PhotoLightbox'
 import ConnectRow from '../components/ConnectRow'
+import EventGraph from '../components/EventGraph'
 import type { Attendee, Photo } from '../lib/types'
 import type { Overlap } from '../lib/graph'
 
@@ -99,6 +100,7 @@ export default function Dossier() {
             <Hero photos={myPhotos} overlapCount={overlaps.length} />
             <PhotoStrip photos={chronological} onOpen={setOpenPhotoId} />
             <SaveButton attendeeId={me.id} />
+            <EventGraph attendees={attendees} tags={tags} meId={me.id} />
             {overlaps.length > 0 ? (
               <PeopleSection overlaps={overlaps} photos={photos} onOpenPhoto={setOpenPhotoId} />
             ) : (
