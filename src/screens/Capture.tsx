@@ -79,7 +79,7 @@ export default function Capture() {
   const isEmpty = !loading && photos.length === 0 && pending.length === 0
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-5 pb-32">
+    <main className="mx-auto w-full max-w-2xl px-5 pb-48">
       <header className="flex items-center gap-3 py-6">
         {me ? <Avatar name={me.name} color={me.avatar_color} size={44} /> : null}
         <div className="min-w-0 flex-1">
@@ -138,9 +138,10 @@ export default function Capture() {
         </ul>
       )}
 
-      {/* Barra de accion fija: en el cel es el unico boton que importa. */}
-      <div className="fixed inset-x-0 bottom-0 border-t border-white/10 bg-night/95 backdrop-blur">
-        <div className="mx-auto w-full max-w-2xl px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      {/* Barra de accion fija, justo encima de la nav: en el cel es el unico
+          boton que importa. */}
+      <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-10 border-t border-white/10 bg-night/95 backdrop-blur">
+        <div className="mx-auto w-full max-w-2xl px-5 py-4">
           <input
             ref={inputRef}
             type="file"

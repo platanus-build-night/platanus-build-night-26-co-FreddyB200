@@ -1,8 +1,11 @@
 import type { ReactNode } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useIdentity } from './lib/identity'
+import Nav from './components/Nav'
 import Onboard from './screens/Onboard'
 import Capture from './screens/Capture'
+import Gallery from './screens/Gallery'
+import Dossier from './screens/Dossier'
 
 function Splash({ children }: { children: ReactNode }) {
   return (
@@ -32,12 +35,24 @@ export default function App() {
     )
   }
 
+  // Sin identidad no hay app: el onboarding es la unica puerta.
+  if (!me) {
+    return (
+      <Routes>
+        <Route path="*" element={<Onboard />} />
+      </Routes>
+    )
+  }
+
   return (
-    <Routes>
-      <Route path="/" element={me ? <Navigate to="/add" replace /> : <Onboard />} />
-      <Route path="/add" element={me ? <Capture /> : <Navigate to="/" replace />} />
-      {/* Capas 2 y 3 (galeria + auto-tag, grafo + dossier) se montan aca despues. */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/gallery" element={<Gallery />} />
+        <Route path="/add" element={<Capture />} />
+        <Route path="/you" element={<Dossier />} />
+        <Route path="*" element={<Navigate to="/gallery" replace />} />
+      </Routes>
+      <Nav />
+    </>
   )
 }

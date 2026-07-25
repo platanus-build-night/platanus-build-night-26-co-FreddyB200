@@ -1,7 +1,7 @@
 import { supabase, PHOTOS_BUCKET, photoUrl } from './supabase'
 import { avatarColor } from './avatar'
 import { preparePhoto } from './image'
-import type { Attendee, Event, OnboardInput, Photo } from './types'
+import type { Attendee, Event, OnboardInput, Photo, PhotoTag } from './types'
 
 /** Slug del evento de esta noche. Es lo que apunta el QR. */
 export const EVENT_SLUG = import.meta.env.VITE_EVENT_SLUG ?? 'build-night'
@@ -80,6 +80,43 @@ export async function listAttendees(eventId: string): Promise<Attendee[]> {
 
   if (error) throw error
   return (data ?? []) as Attendee[]
+}
+
+/**
+ * Todos los tags del evento. Es la fuente de las aristas del grafo, asi que se
+ * carga completo (con ~25 personas y ~25 fotos son unas pocas decenas de filas).
+ */
+export async function listTags(eventId: string): Promise<PhotoTag[]> {
+  const { data, error } = await supabase
+    .from('photo_tags')
+    .select('photo_id, attendee_id, created_at, photos!inner(event_id)')
+    .eq('photos.event_id', eventId)
+
+  if (error) throw error
+  return (data ?? []).map((row) => ({
+    photo_id: row.photo_id as string,
+    attendee_id: row.attendee_id as string,
+    created_at: row.created_at as string,
+  }))
+}
+
+/** "That's me" — un tap que recupera tus fotos Y crea las aristas. */
+export async function tagSelf(photoId: string, attendeeId: string): Promise<void> {
+  const { error } = await supabase
+    .from('photo_tags')
+    .upsert({ photo_id: photoId, attendee_id: attendeeId }, { onConflict: 'photo_id,attendee_id' })
+
+  if (error) throw error
+}
+
+export async function untagSelf(photoId: string, attendeeId: string): Promise<void> {
+  const { error } = await supabase
+    .from('photo_tags')
+    .delete()
+    .eq('photo_id', photoId)
+    .eq('attendee_id', attendeeId)
+
+  if (error) throw error
 }
 
 export async function listPhotos(eventId: string): Promise<Photo[]> {
