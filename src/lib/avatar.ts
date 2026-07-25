@@ -1,15 +1,16 @@
 // Chip de iniciales sobre color autogenerado — nada de creador de avatar (seccion 2).
 
-// Tonos que conviven con la paleta indigo/periwinkle/ambar sin competir con las fotos.
+// Tonos desaturados "film" que conviven con la paleta night/ink/dorado sin
+// competir con las fotos ni caer en neon (seccion 6 del CLAUDE.md).
 const PALETTE = [
-  '#8B7CF0', // periwinkle
-  '#F5B942', // ambar
-  '#5EC8E5', // cyan
-  '#C084FC', // violeta
-  '#7DD3A0', // menta
-  '#F58A6E', // coral tenue
-  '#6D8BF5', // azul
-  '#E5A3D8', // rosa
+  '#C6A15B', // dorado
+  '#B98E76', // terracota
+  '#9AA38C', // salvia
+  '#A79CC0', // lavanda apagada
+  '#8FA3B0', // pizarra
+  '#C48B8B', // rosa polvo
+  '#B5A38A', // taupe
+  '#8FAF9A', // menta apagada
 ]
 
 function hash(value: string): number {

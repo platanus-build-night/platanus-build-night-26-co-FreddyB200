@@ -11,6 +11,7 @@ export type Attendee = {
   name: string
   github: string | null
   linkedin: string | null
+  whatsapp: string | null
   building: string | null
   avatar_color: string | null
   device_token: string
@@ -38,5 +39,6 @@ export type OnboardInput = {
   name: string
   github: string
   linkedin: string
+  whatsapp: string
   building: string
 }

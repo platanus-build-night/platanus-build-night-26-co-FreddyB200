@@ -3,6 +3,7 @@ import { useIdentity } from '../lib/identity'
 import { useEventData } from '../lib/useEventData'
 import { overlapsFor, photosFor, sharedMoment, timeOf } from '../lib/graph'
 import { photoUrl } from '../lib/supabase'
+import { whatsappUrl } from '../lib/db'
 import Avatar from '../components/Avatar'
 import Constellation from '../components/Constellation'
 import type { Attendee, Photo } from '../lib/types'
@@ -32,7 +33,7 @@ export default function Dossier() {
   return (
     <main className="mx-auto w-full max-w-2xl px-5 pb-28">
       <header className="py-6">
-        <p className="font-mono text-xs tracking-widest text-link uppercase">
+        <p className="font-mono text-xs tracking-widest text-signal uppercase">
           {event?.name ?? 'Tonight'}
         </p>
         <h1 className="mt-2 font-display text-3xl leading-tight font-bold text-ink">
@@ -93,7 +94,7 @@ export default function Dossier() {
 
 function EmptyGraph({ claimed }: { claimed: number }) {
   return (
-    <div className="mt-6 rounded-2xl border border-dashed border-white/10 px-5 py-10 text-center">
+    <div className="mt-6 rounded-2xl border border-dashed border-border px-5 py-10 text-center">
       <p className="text-sm text-muted">
         {claimed === 0
           ? 'Your constellation lights up once you claim the photos you’re in. Head to the gallery and tap "That’s me".'
@@ -121,7 +122,7 @@ function OverlapCard({ overlap, photos }: { overlap: Overlap; photos: Photo[] })
           ) : null}
         </div>
         <span
-          className="shrink-0 rounded-full bg-link/15 px-2.5 py-1 font-mono text-xs text-link"
+          className="shrink-0 rounded-full bg-signal/15 px-2.5 py-1 font-mono text-xs text-signal"
           title={`${weight} shared photo${weight === 1 ? '' : 's'}`}
         >
           ×{weight}
@@ -147,34 +148,49 @@ function OverlapCard({ overlap, photos }: { overlap: Overlap; photos: Photo[] })
         </ul>
       ) : null}
 
-      <div className="mt-4 flex gap-2">
-        {attendee.github ? (
-          <a
-            href={`https://github.com/${attendee.github}`}
-            target="_blank"
-            rel="noreferrer"
-            className="flex-1 rounded-xl bg-signal px-4 py-3 text-center font-display text-sm font-bold text-night"
-          >
-            Connect on GitHub
-          </a>
-        ) : null}
-        {attendee.linkedin ? (
-          <a
-            href={attendee.linkedin}
-            target="_blank"
-            rel="noreferrer"
-            className={[
-              'rounded-xl border border-white/10 px-4 py-3 text-center font-display text-sm font-bold text-ink',
-              attendee.github ? '' : 'flex-1',
-            ].join(' ')}
-          >
-            LinkedIn
-          </a>
-        ) : null}
-        {!attendee.github && !attendee.linkedin ? (
-          <p className="font-mono text-xs text-muted">No links shared</p>
-        ) : null}
-      </div>
+      <ConnectRow attendee={attendee} />
     </li>
+  )
+}
+
+/**
+ * "Connect" = abrir su perfil, nada de mensajeria in-app (seccion 2).
+ * El primer canal disponible se lleva el dorado; el resto van de contorno.
+ * GitHub primero porque el nicho es eventos dev.
+ */
+function ConnectRow({ attendee }: { attendee: Attendee }) {
+  const channels = [
+    attendee.github
+      ? { key: 'github', label: 'Connect on GitHub', href: `https://github.com/${attendee.github}` }
+      : null,
+    attendee.whatsapp
+      ? { key: 'whatsapp', label: 'WhatsApp', href: whatsappUrl(attendee.whatsapp) }
+      : null,
+    attendee.linkedin ? { key: 'linkedin', label: 'LinkedIn', href: attendee.linkedin } : null,
+  ].filter((c): c is { key: string; label: string; href: string } => c !== null)
+
+  if (channels.length === 0) {
+    return <p className="mt-4 font-mono text-xs text-muted">No links shared</p>
+  }
+
+  return (
+    <div className="mt-4 flex gap-2">
+      {channels.map((c, i) => (
+        <a
+          key={c.key}
+          href={c.href}
+          target="_blank"
+          rel="noreferrer"
+          className={[
+            'rounded-xl px-4 py-3 text-center font-display text-sm font-bold',
+            i === 0
+              ? 'flex-1 bg-signal text-night'
+              : 'border border-border text-ink',
+          ].join(' ')}
+        >
+          {c.label}
+        </a>
+      ))}
+    </div>
   )
 }

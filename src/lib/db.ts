@@ -47,6 +47,17 @@ function normalizeLinkedin(value: string): string | null {
   return `https://linkedin.com/${raw.replace(/^\/+/, '').replace(/^(in\/)?/, 'in/')}`
 }
 
+/** Solo digitos, con codigo de pais — es lo que wa.me/<numero> espera. */
+function normalizeWhatsapp(value: string): string | null {
+  const digits = value.trim().replace(/\D+/g, '')
+  return digits || null
+}
+
+/** https://wa.me/<numero> a partir del whatsapp guardado. */
+export function whatsappUrl(whatsapp: string): string {
+  return `https://wa.me/${whatsapp}`
+}
+
 export async function registerAttendee(
   eventId: string,
   input: OnboardInput,
@@ -61,6 +72,7 @@ export async function registerAttendee(
       name,
       github: normalizeGithub(input.github),
       linkedin: normalizeLinkedin(input.linkedin),
+      whatsapp: normalizeWhatsapp(input.whatsapp),
       building: input.building.trim() || null,
       avatar_color: avatarColor(name),
     })

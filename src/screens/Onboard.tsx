@@ -5,7 +5,7 @@ import { useIdentity } from '../lib/identity'
 import Field from '../components/Field'
 import type { OnboardInput } from '../lib/types'
 
-const EMPTY: OnboardInput = { name: '', github: '', linkedin: '', building: '' }
+const EMPTY: OnboardInput = { name: '', github: '', linkedin: '', whatsapp: '', building: '' }
 
 export default function Onboard() {
   const { event, register } = useIdentity()
@@ -35,7 +35,7 @@ export default function Onboard() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-5 py-10">
       <header className="mb-8">
-        <p className="font-mono text-xs tracking-widest text-link uppercase">
+        <p className="font-mono text-xs tracking-widest text-signal uppercase">
           {event?.name ?? 'Tonight'}
         </p>
         <h1 className="mt-2 font-display text-4xl leading-tight font-bold text-ink">
@@ -74,6 +74,16 @@ export default function Onboard() {
           hint="Optional."
           autoCapitalize="none"
           autoCorrect="off"
+          mono
+        />
+        <Field
+          label="WhatsApp"
+          type="tel"
+          value={form.whatsapp}
+          onChange={set('whatsapp')}
+          placeholder="+1 555 123 4567"
+          hint="Optional. Only shown to people you overlap with."
+          autoComplete="tel"
           mono
         />
         <Field

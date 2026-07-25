@@ -16,11 +16,15 @@ create table if not exists attendees (
   name text not null,
   github text,
   linkedin text,
+  whatsapp text,              -- numero completo con codigo de pais, para wa.me/<numero>
   building text,              -- "What are you building?"
   avatar_color text,          -- hex autogenerado del nombre
   device_token uuid unique default gen_random_uuid(),
   created_at timestamptz default now()
 );
+
+-- idempotente: por si la tabla ya existia de antes de agregar whatsapp.
+alter table attendees add column if not exists whatsapp text;
 
 -- photos: el pozo compartido.
 create table if not exists photos (

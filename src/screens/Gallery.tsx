@@ -66,7 +66,7 @@ export default function Gallery() {
       {loading && photos.length === 0 ? (
         <p className="py-16 text-center font-mono text-sm text-muted">Loading…</p>
       ) : photos.length === 0 ? (
-        <p className="mt-6 rounded-2xl border border-dashed border-white/10 px-5 py-10 text-center text-sm text-muted">
+        <p className="mt-6 rounded-2xl border border-dashed border-border px-5 py-10 text-center text-sm text-muted">
           No photos yet — be the first to add one.
         </p>
       ) : (

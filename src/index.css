@@ -1,18 +1,20 @@
 @import 'tailwindcss';
 
-/* Tokens de la seccion 6 del CLAUDE.md. En Tailwind v4 el tema se define aca,
-   no en tailwind.config.ts. Cada token genera utilidades (bg-base, text-muted...). */
+/* Tokens extraidos de "Overlap Recap.dc.html" (lenguaje visual canonico, ver
+   CLAUDE.md seccion 6 — reemplaza la paleta indigo/periwinkle original por una
+   paleta "film": oscura y calida, un unico acento dorado, sin neon.
+   En Tailwind v4 el tema se define aca, no en tailwind.config.ts. */
 @theme {
   /* "base" chocaria con el text-base de Tailwind (font-size), asi que "night". */
-  --color-night: #14132a; /* indigo medianoche */
-  --color-surface: #1e1c3a; /* cards */
-  --color-ink: #f5f3ff; /* texto principal */
-  --color-muted: #9b97c4; /* texto tenue */
-  --color-link: #8b7cf0; /* periwinkle — aristas del grafo */
-  --color-signal: #f5b942; /* ambar — tu nodo, highlights */
+  --color-night: #16151a; /* fondo, casi negro pero calido */
+  --color-surface: #201e26; /* cards, tiras de foto */
+  --color-border: #2c2a33; /* hairlines — reemplaza los border-white/10 */
+  --color-ink: #efebe2; /* texto principal, crema */
+  --color-muted: #8a868f; /* texto tenue */
+  --color-signal: #c6a15b; /* dorado — unico acento: tu nodo, CTAs, highlights */
 
   --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
 }
 
@@ -30,8 +32,34 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* La constelacion se anima una sola vez al cargar el dossier; todo lo demas
-   queda quieto. Respetamos la preferencia del sistema. */
+::-webkit-scrollbar {
+  height: 0;
+  width: 0;
+}
+
+@keyframes ov-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ov-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Las animaciones de entrada (recap, tira de fotos) corren una sola vez al
+   cargar el dossier; todo lo demas queda quieto. Respetamos la preferencia
+   del sistema. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

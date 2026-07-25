@@ -105,7 +105,7 @@ export default function Capture() {
       </p>
 
       {isEmpty ? (
-        <p className="mt-10 rounded-2xl border border-dashed border-white/10 px-5 py-10 text-center text-sm text-muted">
+        <p className="mt-10 rounded-2xl border border-dashed border-border px-5 py-10 text-center text-sm text-muted">
           No photos yet — be the first to add one.
         </p>
       ) : (
@@ -140,7 +140,7 @@ export default function Capture() {
 
       {/* Barra de accion fija, justo encima de la nav: en el cel es el unico
           boton que importa. */}
-      <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-10 border-t border-white/10 bg-night/95 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-10 border-t border-border bg-night/95 backdrop-blur">
         <div className="mx-auto w-full max-w-2xl px-5 py-4">
           <input
             ref={inputRef}

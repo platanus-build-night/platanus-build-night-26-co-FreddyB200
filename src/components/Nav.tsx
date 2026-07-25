@@ -8,7 +8,7 @@ const TABS = [
 
 export default function Nav() {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-night/95 backdrop-blur">
+    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-night/95 backdrop-blur">
       <ul className="mx-auto flex w-full max-w-2xl pb-[env(safe-area-inset-bottom)]">
         {TABS.map((tab) => (
           <li key={tab.to} className="flex-1">

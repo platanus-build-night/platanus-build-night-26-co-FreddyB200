@@ -17,7 +17,7 @@ export default function Avatar({ name, color, size = 40 }: Props) {
         width: size,
         height: size,
         backgroundColor: bg,
-        color: '#14132A',
+        color: 'var(--color-night)',
         fontSize: size * 0.38,
       }}
     >

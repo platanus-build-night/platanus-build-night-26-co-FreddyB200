@@ -8,8 +8,12 @@ const CENTER = SIZE / 2
 
 /**
  * El elemento firma (seccion 6): la sala renderizada como luz.
- * Tu nodo en ambar al centro, tus coincidencias alrededor — mas cerca cuanto
- * mas fuerte la conexion. Aristas periwinkle, grosor por # de fotos compartidas.
+ * Tu nodo dorado al centro, tus coincidencias alrededor — mas cerca cuanto mas
+ * fuerte la conexion. Grosor de arista = # de fotos compartidas.
+ *
+ * La paleta "film" tiene un solo acento (dorado), asi que las aristas ya no son
+ * periwinkle: son el mismo dorado con opacidad escalada por peso. Una conexion
+ * fuerte se lee mas gruesa Y mas brillante; el color lo aportan los avatares.
  * Se dibuja una sola vez al cargar; el CSS global respeta prefers-reduced-motion.
  */
 export default function Constellation({
@@ -32,6 +36,8 @@ export default function Constellation({
         x: CENTER + Math.cos(angle) * radius,
         y: CENTER + Math.sin(angle) * radius,
         width: 1 + (o.weight / max) * 3.5,
+        // Sin segundo acento, el peso tambien se lee en el brillo.
+        opacity: 0.28 + (o.weight / max) * 0.5,
       }
     })
   }, [overlaps])
@@ -71,10 +77,10 @@ export default function Constellation({
             y1={CENTER}
             x2={n.x}
             y2={n.y}
-            stroke="#8B7CF0"
+            stroke="var(--color-signal)"
             strokeWidth={n.width}
             strokeLinecap="round"
-            opacity={0.75}
+            opacity={n.opacity}
             style={{ animationDelay: `${i * 60}ms` }}
           />
         ))}
@@ -91,7 +97,7 @@ export default function Constellation({
             cx={n.x}
             cy={n.y}
             r={17}
-            fill={n.overlap.attendee.avatar_color ?? '#8B7CF0'}
+            fill={n.overlap.attendee.avatar_color ?? 'var(--color-muted)'}
           />
           <text
             x={n.x}
@@ -100,7 +106,7 @@ export default function Constellation({
             dominantBaseline="central"
             fontSize="11"
             fontWeight="700"
-            fill="#14132A"
+            fill="var(--color-night)"
             fontFamily="'Space Grotesk', sans-serif"
           >
             {initials(n.overlap.attendee.name)}
@@ -110,7 +116,7 @@ export default function Constellation({
 
       {/* Tu nodo: ambar, al centro */}
       <g filter="url(#glow)">
-        <circle cx={CENTER} cy={CENTER} r={24} fill="#F5B942" />
+        <circle cx={CENTER} cy={CENTER} r={24} fill="var(--color-signal)" />
       </g>
       <text
         x={CENTER}
@@ -119,7 +125,7 @@ export default function Constellation({
         dominantBaseline="central"
         fontSize="15"
         fontWeight="700"
-        fill="#14132A"
+        fill="var(--color-night)"
         fontFamily="'Space Grotesk', sans-serif"
       >
         {initials(me.name)}
