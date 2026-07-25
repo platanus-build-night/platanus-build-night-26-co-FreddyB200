@@ -8,7 +8,10 @@
     "dev:vercel": "vercel dev",
     "build": "tsc -b --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "tsc -b --noEmit",
+    "tags:list": "node scripts/tags.mjs list",
+    "tags:apply": "node scripts/tags.mjs apply",
+    "tags:status": "node scripts/tags.mjs status"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

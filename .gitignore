@@ -48,6 +48,9 @@ Thumbs.db
 # WSL / Windows: metadata de "archivo bajado de internet"
 *:Zone.Identifier
 
+# mapping local de tags del curador (contiene nombres de gente real del evento)
+supabase/tags.local.json
+
 # cache de herramientas
 .eslintcache
 .cache/
