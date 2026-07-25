@@ -152,6 +152,8 @@ export default function Gallery() {
             likeBusy={likeBusy}
             onToggleLike={me ? () => void toggleLike(open) : undefined}
             uploader={open.uploader_id ? (byId.get(open.uploader_id) ?? null) : null}
+            allAttendees={attendees}
+            allTags={tags}
             footer={
               <ClaimButton
                 claimed={me ? (cast.get(open.id) ?? []).some((a) => a.id === me.id) : false}

@@ -110,10 +110,13 @@ export default function EventGraph({
   attendees,
   tags,
   meId,
+  embedded,
 }: {
   attendees: Attendee[]
   tags: PhotoTag[]
   meId: string
+  /** Reusado dentro de un PersonList (tageados/likes): sin header propio, foco en meId. */
+  embedded?: boolean
 }) {
   const [revealId, setRevealId] = useState<string | null>(null)
 
@@ -138,17 +141,19 @@ export default function EventGraph({
   const maxWeight = Math.max(1, ...edges.map((e) => e.weight))
 
   return (
-    <section className="mt-9 border-t border-border pt-7">
-      <div className="px-5">
-        <h2 className="font-display text-[21px] font-medium tracking-[-0.02em] text-ink">The room</h2>
-        <p className="mt-1.5 font-mono text-[10px] tracking-[0.14em] text-muted uppercase">
-          {nodeIds.length} people · {edges.length} connection{edges.length === 1 ? '' : 's'}
-        </p>
-      </div>
+    <section className={embedded ? 'mt-3' : 'mt-9 border-t border-border pt-7'}>
+      {embedded ? null : (
+        <div className="px-5">
+          <h2 className="font-display text-[21px] font-medium tracking-[-0.02em] text-ink">The room</h2>
+          <p className="mt-1.5 font-mono text-[10px] tracking-[0.14em] text-muted uppercase">
+            {nodeIds.length} people · {edges.length} connection{edges.length === 1 ? '' : 's'}
+          </p>
+        </div>
+      )}
 
       <svg
         viewBox={`0 0 ${SIZE} ${SIZE}`}
-        className="mx-auto mt-4 w-full max-w-sm"
+        className={embedded ? 'mx-auto w-full max-w-[220px]' : 'mx-auto mt-4 w-full max-w-sm'}
         role="img"
         aria-label={`Graph of ${nodeIds.length} people who overlapped tonight`}
       >
@@ -218,14 +223,14 @@ export default function EventGraph({
       </svg>
 
       {revealed ? (
-        <div className="mx-5 mt-3 rounded-[10px] border border-border bg-surface p-3.5">
+        <div className={embedded ? 'mt-3 rounded-[10px] border border-border bg-night p-3.5' : 'mx-5 mt-3 rounded-[10px] border border-border bg-surface p-3.5'}>
           <div className="flex items-center gap-3">
             <Avatar name={revealed.name} color={revealed.avatar_color} size={40} />
             <p className="font-display text-[15px] font-medium tracking-[-0.01em] text-ink">
-              {revealed.id === meId ? 'You' : revealed.name}
+              {revealed.name}
             </p>
           </div>
-          {revealed.id === meId ? null : <ConnectRow attendee={revealed} />}
+          <ConnectRow attendee={revealed} />
         </div>
       ) : null}
     </section>

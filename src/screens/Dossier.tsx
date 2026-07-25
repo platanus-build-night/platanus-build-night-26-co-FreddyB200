@@ -121,6 +121,8 @@ export default function Dossier() {
           likeBusy={likeBusy}
           onToggleLike={() => void toggleLike(openPhoto)}
           uploader={openPhoto.uploader_id ? (byId.get(openPhoto.uploader_id) ?? null) : null}
+          allAttendees={attendees}
+          allTags={tags}
         />
       ) : null}
     </>

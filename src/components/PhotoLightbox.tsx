@@ -4,7 +4,8 @@ import { photoUrl } from '../lib/supabase'
 import { timeOf } from '../lib/graph'
 import Avatar from './Avatar'
 import ConnectRow from './ConnectRow'
-import type { Attendee, Photo } from '../lib/types'
+import EventGraph from './EventGraph'
+import type { Attendee, Photo, PhotoTag } from '../lib/types'
 
 /**
  * La foto vive en Supabase Storage (otro origen), asi que un <a download>
@@ -40,6 +41,8 @@ export default function PhotoLightbox({
   onToggleLike,
   likeBusy,
   uploader,
+  allAttendees,
+  allTags,
 }: {
   photo: Photo
   people: Attendee[]
@@ -51,6 +54,9 @@ export default function PhotoLightbox({
   onToggleLike?: () => void
   likeBusy?: boolean
   uploader?: Attendee | null
+  /** Para el grafo embebido al tocar un nombre — con quien se relaciona esa persona. */
+  allAttendees?: Attendee[]
+  allTags?: PhotoTag[]
 }) {
   const [saving, setSaving] = useState(false)
   const [connectId, setConnectId] = useState<string | null>(null)
@@ -133,8 +139,21 @@ export default function PhotoLightbox({
           {uploader ? <> · Uploaded by {uploader.name}</> : null}
         </p>
 
-        <PersonList people={people} selectedId={connectId} onSelect={toggleConnect} />
-        <PersonList title="Liked by" people={likedBy ?? []} selectedId={connectId} onSelect={toggleConnect} />
+        <PersonList
+          people={people}
+          selectedId={connectId}
+          onSelect={toggleConnect}
+          allAttendees={allAttendees}
+          allTags={allTags}
+        />
+        <PersonList
+          title="Liked by"
+          people={likedBy ?? []}
+          selectedId={connectId}
+          onSelect={toggleConnect}
+          allAttendees={allAttendees}
+          allTags={allTags}
+        />
 
         {footer}
       </div>
@@ -142,17 +161,21 @@ export default function PhotoLightbox({
   )
 }
 
-/** Tocar un nombre expande su ConnectRow (GitHub/LinkedIn/WhatsApp) debajo. */
+/** Tocar un nombre expande su ConnectRow + su grafo (con quien mas se relaciona). */
 function PersonList({
   title,
   people,
   selectedId,
   onSelect,
+  allAttendees,
+  allTags,
 }: {
   title?: string
   people: Attendee[]
   selectedId: string | null
   onSelect: (id: string) => void
+  allAttendees?: Attendee[]
+  allTags?: PhotoTag[]
 }) {
   if (people.length === 0) return null
   const selected = people.find((a) => a.id === selectedId) ?? null
@@ -179,7 +202,14 @@ function PersonList({
           </li>
         ))}
       </ul>
-      {selected ? <ConnectRow attendee={selected} /> : null}
+      {selected ? (
+        <>
+          <ConnectRow attendee={selected} />
+          {allAttendees && allTags ? (
+            <EventGraph attendees={allAttendees} tags={allTags} meId={selected.id} embedded />
+          ) : null}
+        </>
+      ) : null}
     </div>
   )
 }
